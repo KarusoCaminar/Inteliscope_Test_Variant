@@ -431,23 +431,22 @@ with tabs[0]:
 
 
     with col2_display:
-        if current_func and current_func_dim_initial == 2: # 2D Plot nur für 2D Funktionen
+        if current_func and current_func_dim_initial == 2: 
             plot2d_container_initial = st.container() 
             controls2d_container_initial = st.container() 
 
             if 'contour_levels_initial' not in st.session_state: st.session_state.contour_levels_initial = contour_levels
             if 'zoom_factor_initial' not in st.session_state: st.session_state.zoom_factor_initial = 1.0
             if 'show_grid_2d_initial' not in st.session_state: st.session_state.show_grid_2d_initial = True 
-            if 'res_2d_initial_plot' not in st.session_state: st.session_state.res_2d_initial_plot = 60 # Auflösung für initialen 2D Plot
+            if 'res_2d_initial_plot' not in st.session_state: st.session_state.res_2d_initial_plot = 60 
             
             with controls2d_container_initial:
                 st.markdown("""<div style="background-color: #6a2c91; padding: 8px; border-radius: 8px; margin-bottom: 10px;"><h4 style="color: white; margin: 0;">2D Ansicht Steuerung</h4></div>""", unsafe_allow_html=True)
-                cols_slider_2d_initial = st.columns(4) # Vierter Slider für Auflösung
+                cols_slider_2d_initial = st.columns(4) 
                 with cols_slider_2d_initial[0]: st.session_state.contour_levels_initial = st.slider("Konturlinien", 10, 100, st.session_state.contour_levels_initial, step=5, key="contour_slider_initial")
                 with cols_slider_2d_initial[1]: st.session_state.zoom_factor_initial = st.slider("Zoom", 0.5, 5.0, st.session_state.zoom_factor_initial, step=0.1, key="zoom_slider_initial")
                 with cols_slider_2d_initial[2]: st.session_state.show_grid_2d_initial = st.checkbox("Gitter anzeigen", st.session_state.show_grid_2d_initial, key="grid_checkbox_initial")
                 with cols_slider_2d_initial[3]: st.session_state.res_2d_initial_plot = st.slider("Auflösung (2D Initial)", 30, 100, st.session_state.res_2d_initial_plot, key="res_slider_initial_2d")
-
 
             with plot2d_container_initial:
                 fig2d_initial = plt.figure(figsize=(8, 6))
@@ -472,7 +471,7 @@ with tabs[0]:
                         except: Z_contour[i_c, j_c] = np.nan
                 
                 Z_finite_contour = Z_contour[np.isfinite(Z_contour)]
-                cp_initial = None # Initialisieren
+                cp_initial = None 
                 if len(Z_finite_contour) > 0:
                     z_min_c, z_max_c = np.percentile(Z_finite_contour, [1,99])
                     Z_plot_contour = np.clip(Z_contour, z_min_c, z_max_c)
@@ -482,25 +481,39 @@ with tabs[0]:
                     except: pass 
                     if hasattr(cp_initial, 'colorbar') and cp_initial.colorbar: cp_initial.colorbar.remove()
                     fig2d_initial.colorbar(cp_initial, ax=ax2d_initial).set_label('Funktionswert')
-                else: # Fallback if no finite Z values
+                else: 
                     ax2d_initial.text(0.5, 0.5, "Keine darstellbaren Funktionswerte im Bereich.", horizontalalignment='center', verticalalignment='center', transform=ax2d_initial.transAxes)
-
 
                 ax2d_initial.set_xlabel('X'); ax2d_initial.set_ylabel('Y')
                 ax2d_initial.set_title(f"Konturplot: {st.session_state.ausgewählte_funktion}")
+                
+                # Korrigierte Legendenbehandlung für 2D-Plot
+                legend_handles_2d_initial = []
+                legend_labels_2d_initial = []
+
                 if minima:
-                    for m_init_2d in minima:
-                        if len(m_init_2d) == 2: ax2d_initial.plot(m_init_2d[0], m_init_2d[1], 'X', color='red', markersize=8, markeredgecolor='black', label='Bek. Minimum' if 'Bek. Minimum' not in [l.get_label() for l in ax2d_initial.get_legend().get_texts()] else "")
+                    for m_idx, m_init_2d in enumerate(minima):
+                        if len(m_init_2d) == 2: 
+                            # Plot object for legend handle
+                            line2d_list = ax2d_initial.plot(m_init_2d[0], m_init_2d[1], 'X', color='red', markersize=8, markeredgecolor='black')
+                            if m_idx == 0: # Add label only for the first minimum to avoid duplicates
+                                legend_handles_2d_initial.append(line2d_list[0]) # plot returns a list
+                                legend_labels_2d_initial.append('Bek. Minimum')
+                
                 ax2d_initial.set_xlim(x_zoom_range_initial); ax2d_initial.set_ylim(y_zoom_range_initial)
                 if st.session_state.show_grid_2d_initial: ax2d_initial.grid(True, linestyle='--', alpha=0.6)
-                handles_i2d, labels_i2d = ax2d_initial.get_legend_handles_labels()
-                if handles_i2d: ax2d_initial.legend(dict(zip(labels_i2d, handles_i2d)).values(), dict(zip(labels_i2d, handles_i2d)).keys(), loc='best')
+                
+                # Create legend if there are items to show
+                if legend_handles_2d_initial:
+                    ax2d_initial.legend(legend_handles_2d_initial, legend_labels_2d_initial, loc='best')
+                
                 st.pyplot(fig2d_initial)
                 plt.close(fig2d_initial) 
         elif not current_func:
             st.info("Wähle eine Funktion, um die 2D-Ansicht anzuzeigen.")
         elif current_func_dim_initial != 2:
             st.info("Die initiale 2D-Konturansicht ist nur für 2D-Funktionen verfügbar.")
+
 
 
     # Bereich für Optimierungsergebnisse (Container-Definitionen hier, damit sie immer existieren)
