@@ -301,6 +301,227 @@ with st.sidebar:
 tabs = st.tabs(["Optimierungsvisualisierung", "Funktionseditor", "Ergebnisvergleich"])
 
 with tabs[0]:
+# Dieser Code kommt in app.py in den Block "with tabs[0]:"
+# direkt NACH der Zeile "with tabs[0]:" und VOR dem Block "if start_optimization and current_func:"
+
+    # Hole die aktuelle Funktion (dieser Teil ist wichtig für die initiale Anzeige)
+    # und stelle sicher, dass current_func initialisiert wird.
+    current_func = None
+    x_range = (-5, 5) # Default x_range
+    y_range = (-5, 5) # Default y_range
+    contour_levels = 30 # Default contour_levels
+    minima = None # Default minima
+    current_func_dim_initial = 2 # Default dimension
+
+    if st.session_state.ausgewählte_funktion in pf.MATH_FUNCTIONS_LIB:
+        current_func_info = pf.MATH_FUNCTIONS_LIB[st.session_state.ausgewählte_funktion]
+        current_func = current_func_info["func"]
+        x_range = current_func_info["default_range"][0]
+        y_range = current_func_info["default_range"][1]
+        contour_levels = current_func_info.get("contour_levels", 40)
+        current_func_dim_initial = current_func_info.get("dimensions", 2)
+        
+        # Testaufruf für Tooltip und Minima nur wenn Funktion existiert
+        if current_func:
+            try:
+                # Erzeuge einen Dummy-Input basierend auf der Dimension
+                dummy_input_initial = np.array([0.0] * current_func_dim_initial)
+                func_result_initial = current_func(dummy_input_initial) 
+                if "tooltip" in func_result_initial:
+                    with st.expander("ℹ️ Über diese Funktion", expanded=False):
+                        st.markdown(func_result_initial["tooltip"])
+                minima = func_result_initial.get("minima", None)
+            except Exception as e_init_func_call:
+                st.warning(f"Konnte initiale Funktionsdetails nicht laden: {e_init_func_call}")
+        
+    elif st.session_state.ausgewählte_funktion in st.session_state.custom_funcs:
+        current_func = st.session_state.custom_funcs[st.session_state.ausgewählte_funktion]
+        current_func_dim_initial = 2 # Custom functions are currently assumed to be 2D
+        if current_func:
+            try:
+                test_eval_custom = current_func(np.array([0.0, 0.0])) # Testaufruf für 2D
+                x_range = test_eval_custom.get('x_range', (-5,5))
+                y_range = test_eval_custom.get('y_range', (-5,5))
+                if "tooltip" in test_eval_custom:
+                     with st.expander("ℹ️ Über diese Funktion", expanded=False):
+                        st.markdown(test_eval_custom["tooltip"])
+            except Exception as e_init_custom_func_call: # Fallback
+                st.warning(f"Konnte initiale Details der benutzerdefinierten Funktion nicht laden: {e_init_custom_func_call}")
+                x_range = (-5, 5)
+                y_range = (-5, 5)
+        contour_levels = 30
+        minima = None 
+    else:
+        st.error("Die ausgewählte Funktion wurde nicht gefunden oder konnte nicht initialisiert werden.")
+        # current_func bleibt None, die Default-Ranges werden verwendet
+
+    # Layout für die initiale Visualisierung (bleibt auch während der Optimierung sichtbar)
+    col1_display, col2_display = st.columns([1, 1]) 
+    
+    with col1_display:
+        if current_func and current_func_dim_initial == 2: # 3D Plot nur für 2D Funktionen
+            plot3d_container_initial = st.container() 
+            controls3d_container_initial = st.container() 
+            
+            if 'elev_3d_initial' not in st.session_state: st.session_state.elev_3d_initial = 30
+            if 'azim_3d_initial' not in st.session_state: st.session_state.azim_3d_initial = -60 
+            if 'dist_3d_initial' not in st.session_state: st.session_state.dist_3d_initial = 10
+            if 'res_3d_initial_plot' not in st.session_state: st.session_state.res_3d_initial_plot = 40 # Geringere Auflösung für initialen Plot
+                
+            with controls3d_container_initial:
+                st.markdown("""<div style="background-color: #4d8bf0; padding: 8px; border-radius: 8px; margin-bottom: 10px;"><h4 style="color: white; margin: 0;">3D Ansicht Steuerung</h4></div>""", unsafe_allow_html=True)
+                btn_cols_initial = st.columns(5)
+                if btn_cols_initial[0].button("Von oben", key="top_view_initial", type="primary", use_container_width=True): st.session_state.elev_3d_initial = 90; st.session_state.azim_3d_initial = 0
+                if btn_cols_initial[1].button("Von vorne", key="front_view_initial", type="primary", use_container_width=True): st.session_state.elev_3d_initial = 0; st.session_state.azim_3d_initial = 0
+                if btn_cols_initial[2].button("Von rechts", key="right_view_initial", type="primary", use_container_width=True): st.session_state.elev_3d_initial = 0; st.session_state.azim_3d_initial = 90
+                if btn_cols_initial[3].button("Isometrisch", key="iso_view_initial", type="primary", use_container_width=True): st.session_state.elev_3d_initial = 30; st.session_state.azim_3d_initial = 45
+                if btn_cols_initial[4].button("Von links", key="left_view_initial", type="primary", use_container_width=True): st.session_state.elev_3d_initial = 0; st.session_state.azim_3d_initial = -90
+
+                cols_slider_initial = st.columns(4) # Vierter Slider für Auflösung
+                with cols_slider_initial[0]: st.session_state.elev_3d_initial = st.slider("Elevation", 0, 90, st.session_state.elev_3d_initial, key="elev_slider_initial")
+                with cols_slider_initial[1]: st.session_state.azim_3d_initial = st.slider("Azimuth", -180, 180, st.session_state.azim_3d_initial, key="azim_slider_initial")
+                with cols_slider_initial[2]: st.session_state.dist_3d_initial = st.slider("Distanz", 5, 20, st.session_state.dist_3d_initial, key="dist_slider_initial")
+                with cols_slider_initial[3]: st.session_state.res_3d_initial_plot = st.slider("Auflösung (3D Initial)", 20, 60, st.session_state.res_3d_initial_plot, key="res_slider_initial_3d")
+            
+            with plot3d_container_initial:
+                fig3d_initial = plt.figure(figsize=(8, 6))
+                ax3d_initial = fig3d_initial.add_subplot(111, projection='3d')
+                
+                x_surf = np.linspace(x_range[0], x_range[1], st.session_state.res_3d_initial_plot) 
+                y_surf = np.linspace(y_range[0], y_range[1], st.session_state.res_3d_initial_plot)
+                X_surf, Y_surf = np.meshgrid(x_surf, y_surf)
+                Z_surf = np.zeros_like(X_surf)
+                
+                for i_s in range(X_surf.shape[0]):
+                    for j_s in range(X_surf.shape[1]):
+                        try:
+                            Z_surf[i_s, j_s] = current_func(np.array([X_surf[i_s, j_s], Y_surf[i_s, j_s]]))['value']
+                        except: Z_surf[i_s, j_s] = np.nan
+                
+                Z_finite_surf = Z_surf[np.isfinite(Z_surf)]
+                if len(Z_finite_surf) > 0:
+                    z_min_s, z_max_s = np.percentile(Z_finite_surf, [1, 99]) 
+                    Z_plot_surf = np.clip(Z_surf, z_min_s, z_max_s)
+                else: Z_plot_surf = Z_surf
+                
+                surf_initial = ax3d_initial.plot_surface(X_surf, Y_surf, Z_plot_surf, cmap='viridis', edgecolor='none', alpha=0.8, rstride=1, cstride=1)
+                ax3d_initial.set_xlabel('X'); ax3d_initial.set_ylabel('Y'); ax3d_initial.set_zlabel('Funktionswert')
+                ax3d_initial.set_title(f"3D-Oberfläche: {st.session_state.ausgewählte_funktion}")
+                if minima:
+                    for m_init in minima:
+                        if len(m_init) == 2: 
+                            try:
+                                z_m_init = current_func(np.array(m_init))['value']
+                                if len(Z_finite_surf) > 0: z_m_init = np.clip(z_m_init, z_min_s, z_max_s)
+                                ax3d_initial.scatter([m_init[0]], [m_init[1]], [z_m_init], color='red', marker='X', s=100, linewidths=1.5, label='Bek. Minimum' if 'Bek. Minimum' not in [l.get_label() for l in ax3d_initial.get_legend_handles_labels()] else "")
+                            except: pass
+                ax3d_initial.view_init(elev=st.session_state.elev_3d_initial, azim=st.session_state.azim_3d_initial)
+                try: ax3d_initial.dist = st.session_state.dist_3d_initial
+                except: pass
+                if hasattr(surf_initial, 'colorbar') and surf_initial.colorbar: surf_initial.colorbar.remove() 
+                fig3d_initial.colorbar(surf_initial, ax=ax3d_initial, shrink=0.6, aspect=10, pad=0.1)
+                handles_i3d, labels_i3d = ax3d_initial.get_legend_handles_labels()
+                if handles_i3d: ax3d_initial.legend(dict(zip(labels_i3d, handles_i3d)).values(), dict(zip(labels_i3d, handles_i3d)).keys(), loc='upper right')
+                st.pyplot(fig3d_initial)
+                plt.close(fig3d_initial) 
+        elif not current_func:
+            st.info("Wähle eine Funktion, um die 3D-Ansicht anzuzeigen.")
+        elif current_func_dim_initial != 2:
+            st.info("Die initiale 3D-Oberflächenansicht ist nur für 2D-Funktionen verfügbar.")
+
+
+    with col2_display:
+        if current_func and current_func_dim_initial == 2: # 2D Plot nur für 2D Funktionen
+            plot2d_container_initial = st.container() 
+            controls2d_container_initial = st.container() 
+
+            if 'contour_levels_initial' not in st.session_state: st.session_state.contour_levels_initial = contour_levels
+            if 'zoom_factor_initial' not in st.session_state: st.session_state.zoom_factor_initial = 1.0
+            if 'show_grid_2d_initial' not in st.session_state: st.session_state.show_grid_2d_initial = True 
+            if 'res_2d_initial_plot' not in st.session_state: st.session_state.res_2d_initial_plot = 60 # Auflösung für initialen 2D Plot
+            
+            with controls2d_container_initial:
+                st.markdown("""<div style="background-color: #6a2c91; padding: 8px; border-radius: 8px; margin-bottom: 10px;"><h4 style="color: white; margin: 0;">2D Ansicht Steuerung</h4></div>""", unsafe_allow_html=True)
+                cols_slider_2d_initial = st.columns(4) # Vierter Slider für Auflösung
+                with cols_slider_2d_initial[0]: st.session_state.contour_levels_initial = st.slider("Konturlinien", 10, 100, st.session_state.contour_levels_initial, step=5, key="contour_slider_initial")
+                with cols_slider_2d_initial[1]: st.session_state.zoom_factor_initial = st.slider("Zoom", 0.5, 5.0, st.session_state.zoom_factor_initial, step=0.1, key="zoom_slider_initial")
+                with cols_slider_2d_initial[2]: st.session_state.show_grid_2d_initial = st.checkbox("Gitter anzeigen", st.session_state.show_grid_2d_initial, key="grid_checkbox_initial")
+                with cols_slider_2d_initial[3]: st.session_state.res_2d_initial_plot = st.slider("Auflösung (2D Initial)", 30, 100, st.session_state.res_2d_initial_plot, key="res_slider_initial_2d")
+
+
+            with plot2d_container_initial:
+                fig2d_initial = plt.figure(figsize=(8, 6))
+                ax2d_initial = fig2d_initial.add_subplot(111)
+                
+                center_x_initial = np.mean(x_range)
+                center_y_initial = np.mean(y_range)
+                x_half_range_initial = (x_range[1] - x_range[0]) / (2 * st.session_state.zoom_factor_initial)
+                y_half_range_initial = (y_range[1] - y_range[0]) / (2 * st.session_state.zoom_factor_initial)
+                x_zoom_range_initial = (center_x_initial - x_half_range_initial, center_x_initial + x_half_range_initial)
+                y_zoom_range_initial = (center_y_initial - y_half_range_initial, center_y_initial + y_half_range_initial)
+                
+                grid_size_initial = int(st.session_state.res_2d_initial_plot * np.sqrt(st.session_state.zoom_factor_initial)) 
+                x_contour = np.linspace(x_zoom_range_initial[0], x_zoom_range_initial[1], grid_size_initial)
+                y_contour = np.linspace(y_zoom_range_initial[0], y_zoom_range_initial[1], grid_size_initial)
+                X_contour, Y_contour = np.meshgrid(x_contour, y_contour)
+                Z_contour = np.zeros_like(X_contour)
+
+                for i_c in range(X_contour.shape[0]):
+                    for j_c in range(X_contour.shape[1]):
+                        try: Z_contour[i_c, j_c] = current_func(np.array([X_contour[i_c, j_c], Y_contour[i_c, j_c]]))['value']
+                        except: Z_contour[i_c, j_c] = np.nan
+                
+                Z_finite_contour = Z_contour[np.isfinite(Z_contour)]
+                cp_initial = None # Initialisieren
+                if len(Z_finite_contour) > 0:
+                    z_min_c, z_max_c = np.percentile(Z_finite_contour, [1,99])
+                    Z_plot_contour = np.clip(Z_contour, z_min_c, z_max_c)
+                    cp_initial = ax2d_initial.contourf(X_contour, Y_contour, Z_plot_contour, levels=st.session_state.contour_levels_initial, cmap='viridis', alpha=0.8)
+                    contour_lines_initial = ax2d_initial.contour(X_contour, Y_contour, Z_plot_contour, levels=min(15, st.session_state.contour_levels_initial//3), colors='black', alpha=0.4, linewidths=0.5)
+                    try: ax2d_initial.clabel(contour_lines_initial, inline=True, fontsize=8, fmt='%.1f')
+                    except: pass 
+                    if hasattr(cp_initial, 'colorbar') and cp_initial.colorbar: cp_initial.colorbar.remove()
+                    fig2d_initial.colorbar(cp_initial, ax=ax2d_initial).set_label('Funktionswert')
+                else: # Fallback if no finite Z values
+                    ax2d_initial.text(0.5, 0.5, "Keine darstellbaren Funktionswerte im Bereich.", horizontalalignment='center', verticalalignment='center', transform=ax2d_initial.transAxes)
+
+
+                ax2d_initial.set_xlabel('X'); ax2d_initial.set_ylabel('Y')
+                ax2d_initial.set_title(f"Konturplot: {st.session_state.ausgewählte_funktion}")
+                if minima:
+                    for m_init_2d in minima:
+                        if len(m_init_2d) == 2: ax2d_initial.plot(m_init_2d[0], m_init_2d[1], 'X', color='red', markersize=8, markeredgecolor='black', label='Bek. Minimum' if 'Bek. Minimum' not in [l.get_label() for l in ax2d_initial.get_legend().get_texts()] else "")
+                ax2d_initial.set_xlim(x_zoom_range_initial); ax2d_initial.set_ylim(y_zoom_range_initial)
+                if st.session_state.show_grid_2d_initial: ax2d_initial.grid(True, linestyle='--', alpha=0.6)
+                handles_i2d, labels_i2d = ax2d_initial.get_legend_handles_labels()
+                if handles_i2d: ax2d_initial.legend(dict(zip(labels_i2d, handles_i2d)).values(), dict(zip(labels_i2d, handles_i2d)).keys(), loc='best')
+                st.pyplot(fig2d_initial)
+                plt.close(fig2d_initial) 
+        elif not current_func:
+            st.info("Wähle eine Funktion, um die 2D-Ansicht anzuzeigen.")
+        elif current_func_dim_initial != 2:
+            st.info("Die initiale 2D-Konturansicht ist nur für 2D-Funktionen verfügbar.")
+
+
+    # Bereich für Optimierungsergebnisse (Container-Definitionen hier, damit sie immer existieren)
+    st.markdown("""
+    <div style="background: linear-gradient(90deg, #4d8bf0, #6a2c91); padding: 12px; border-radius: 8px; margin-top: 20px;">
+        <h3 style="color: white; margin: 0;">Optimierungsergebnisse & Live-Tracking</h3>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Container für den Live-Tracker und Info (werden im Optimierungsblock gefüllt)
+    live_tracking_container = st.container()
+    info_box_container = st.container()
+    
+    # Container für die finalen Ergebnis-Plots und Details
+    results_container = st.container()
+
+    # ----- HIER BEGINNT DER GROSSE CODE-BLOCK, DEN ICH DIR ZULETZT GEGEBEN HABE -----
+    # (also der Block, der mit "if start_optimization and current_func:" anfängt)
+    # Dieser Block sollte jetzt hier folgen.
+
+    
     # Hole die aktuelle Funktion
     if st.session_state.ausgewählte_funktion in pf.MATH_FUNCTIONS_LIB:
         current_func_info = pf.MATH_FUNCTIONS_LIB[st.session_state.ausgewählte_funktion]
