@@ -730,8 +730,6 @@ with col1:
         return x, x_history, loss_history, f"Max. Iterationen erreicht ({max_iter})"
     
     def create_visualization_tracker(func, x_range, y_range, contour_levels, minima):
-        path_history = []
-        value_history = []
         """
         Erstellt einen Tracker für den Optimierungspfad
         """
