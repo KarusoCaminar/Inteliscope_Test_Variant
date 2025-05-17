@@ -323,9 +323,7 @@ with tabs[0]:
     col1, col2 = st.columns([1, 1])
     
 with col1:
-    # Erstelle 3D-Plot mit Matplotlib und füge Kontrollen hinzu
     if current_func_obj:
-        # Erstelle Container für 3D Plot und Kontrollen
         plot3d_container = st.container()
         controls3d_container = st.container()
         
@@ -336,8 +334,7 @@ with col1:
             st.session_state.azim_3d = 45
         if 'dist_3d' not in st.session_state:
             st.session_state.dist_3d = 10
-            
-        # Steuerungsbereich
+
         with controls3d_container:
             st.markdown(
                 """<div style="background-color: #4d8bf0; padding: 8px; 
@@ -346,26 +343,28 @@ with col1:
                    </div>""",
                 unsafe_allow_html=True
             )
-            btn_cols = st.columns(5)
-            if btn_cols[0].button("Oben", key="top_view", type="secondary", use_container_width=True):
+            # Steuerungs-Buttons nebeneinander (Korrekte Nutzung)
+            col_top, col_front, col_right, col_iso, col_left = st.columns(5)
+            if col_top.button("Oben", key="top_view", type="secondary", use_container_width=True):
                 st.session_state.elev_3d, st.session_state.azim_3d = 90, 0
-            if btn_cols[1].button("Vorne", key="front_view", type="secondary", use_container_width=True):
+            if col_front.button("Vorne", key="front_view", type="secondary", use_container_width=True):
                 st.session_state.elev_3d, st.session_state.azim_3d = 0, 0
-            if btn_cols[2].button("Rechts", key="right_view", type="secondary", use_container_width=True):
+            if col_right.button("Rechts", key="right_view", type="secondary", use_container_width=True):
                 st.session_state.elev_3d, st.session_state.azim_3d = 0, 90
-            if btn_cols[3].button("Iso", key="iso_view", type="secondary", use_container_width=True):
+            if col_iso.button("Iso", key="iso_view", type="secondary", use_container_width=True):
                 st.session_state.elev_3d, st.session_state.azim_3d = 30, 45
-            if btn_cols[4].button("Links", key="left_view", type="secondary", use_container_width=True):
+            if col_left.button("Links", key="left_view", type="secondary", use_container_width=True):
                 st.session_state.elev_3d, st.session_state.azim_3d = 0, 270
-            
-            slider_cols = st.columns(2)
-            st.session_state.elev_3d = slider_cols[0].slider(
+
+            # Slider für Elevation und Azimuth
+            col_elev, col_azim = st.columns(2)
+            st.session_state.elev_3d = col_elev.slider(
                 "Elevation", 0, 90, st.session_state.elev_3d, key="elev_slider"
             )
-            st.session_state.azim_3d = slider_cols[1].slider(
+            st.session_state.azim_3d = col_azim.slider(
                 "Azimuth", 0, 360, st.session_state.azim_3d, key="azim_slider"
             )
-            # Zoom/Distanz für MPL entfernen oder separat behandeln
+            # Zoom/Distanz für MPL ggf. separat behandeln
             
         # 3D-Plot
         with plot3d_container:
@@ -410,16 +409,6 @@ with col1:
             ax3d.set_ylabel('Y')
             ax3d.set_zlabel('Funktionswert')
             ax3d.set_title(f"3D-Oberfläche: {st.session_state.ausgewählte_funktion}")
-
-        with col1:
-            # Bekannte Minima
-            if minima:
-                for m in minima:
-                    try:
-                        zv = current_func_obj(np.array(m))['value']
-                        ax3d.scatter(m[0], m[1], zv, color='red', marker='+', s=120)
-                    except:
-                        pass
 
             # Top-20 Optimierungspfade zeichnen
             paths_to_plot = []
