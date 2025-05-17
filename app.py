@@ -616,16 +616,6 @@ with col1:
                 best_history = result.history       # Pfad aller x_i
                 best_loss_history = result.loss_history  # Funktionswerte
                 status = result.status              # Status-String
-
-                x = start_point.copy()
-                x_history = [x.copy()]
-                loss_history = []
-                
-                # Berechne initialen Funktionswert und Gradienten
-                result = func(x)
-                value = result.get('value', float('inf'))
-                gradient = result.get('gradient', np.zeros_like(x))
-                loss_history.append(value)
                 
                 # Initialisiere Momentum-Variable
                 velocity = np.zeros_like(x)
