@@ -455,29 +455,50 @@ with col1:
                     except:
                         pass
             
-            # Top‑20 Optimierungspfade zeichnen
-            paths_to_plot = []
-            if st.session_state.optimierungsergebnisse:
-                # nur Läufe für die aktuell ausgewählte Funktion
-                runs = [
-                    r for r in st.session_state.optimierungsergebnisse.values()
-                    if r['function'] == st.session_state.ausgewählte_funktion and 'history' in r
-                ]
-                # sortiere nach finalem Loss
-                runs_sorted = sorted(runs, key=lambda r: r['loss_history'][-1] if r.get('loss_history') else float('inf'))
-                for run in runs_sorted[:20]:
-                    hist = run.get('history')
-                    if hist:
-                        paths_to_plot.append(np.array(hist))
-            
-            # Nutze deine visualization_suite
-            vs.plot_3d_surface_and_paths(
-                fig3d, ax3d, current_func_obj,
-                p1_range=x_range, p2_range=y_range,
-                title=f"3D: {st.session_state.ausgewählte_funktion}",
-                view=(st.session_state.elev_3d, st.session_state.azim_3d),
-                paths_dict={"Top 20 Pfade": paths_to_plot} if paths_to_plot else None
-            )
+# Top‑20 Optimierungspfade zeichnen (ersetzt bisherigen Block)
+paths_to_plot = []
+if st.session_state.optimierungsergebnisse:
+    # Nur Läufe für die aktuell ausgewählte Funktion
+    runs = [
+        r for r in st.session_state.optimierungsergebnisse.values()
+        if r['function'] == st.session_state.ausgewählte_funktion and 'history' in r
+    ]
+    # Nach finalem Loss sortieren (kleinster Wert = beste Lösung)
+    runs_sorted = sorted(
+        runs,
+        key=lambda r: r.get('loss_history', [float('inf')])[-1]
+    )
+    # Top 20 extrahieren
+    for run in runs_sorted[:20]:
+        hist = run.get('history')
+        if hist:
+            paths_to_plot.append(np.array(hist))
+
+# Zeichne jeden Pfad direkt
+for idx, path in enumerate(paths_to_plot):
+    xs, ys = path[:, 0], path[:, 1]
+    #  Z-Werte berechnen und im Plot-Clip begrenzen wie bei der Oberfläche
+    zs = []
+    for x, y in zip(xs, ys):
+        try:
+            v = current_func(np.array([x, y]))['value']
+            # Clip v auf z_min–z_max, die du oben berechnet hast
+            zs.append(min(max(v, z_min), z_max))
+        except:
+            zs.append(np.nan)
+    ax3d.plot(xs, ys, zs, marker='o', linewidth=1, markersize=3,
+              alpha=0.6, label=f'Pfad {idx+1}')
+
+# Falls du weiterhin Deine Oberfläche plus Factory‑Aufruf verwenden willst,
+# entferne den alten paths_dict-Parameter oder setze ihn auf None:
+vs.plot_3d_surface_and_paths(
+    fig3d, ax3d, current_func_obj,
+    p1_range=x_range, p2_range=y_range,
+    title=f"3D: {st.session_state.ausgewählte_funktion}",
+    view=(st.session_state.elev_3d, st.session_state.azim_3d)
+    # paths_dict entfällt hier, da wir direkt in Matplotlib gezeichnet haben
+)
+
             
             # Kamera & Colorbar
             ax3d.view_init(elev=st.session_state.elev_3d, azim=st.session_state.azim_3d)
