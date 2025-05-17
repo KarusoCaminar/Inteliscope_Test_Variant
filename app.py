@@ -911,27 +911,27 @@ with col1:
             - Adaptive Lernrate: {'Ein' if use_adaptive_lr else 'Aus'}
             """)
             
-    # Direkte Optimierung ausführen via io.OPTIMIZERS
-    optimizer_fn = io.OPTIMIZERS[selected_algorithm_key]
-
-    # Visualization‑Tracker erzeugen (Callback + Speicher für Pfad & Werte)
-    visualization_callback, path_hist, loss_hist = create_visualization_tracker(
-        current_func_obj, x_range, y_range, contour_levels, minima
-    )
-
-    # Optimierung starten
-    result = optimizer_fn(
-        func=current_func_obj,
-        x0=start_point,
-        callback=visualization_callback,
-        **optimizer_params
-    )
-
-# Ergebnisse extrahieren
-best_x            = result.x_best
-best_history      = result.history
-best_loss_history = result.loss_history
-status            = result.status
+            # Direkte Optimierung ausführen via io.OPTIMIZERS
+            optimizer_fn = io.OPTIMIZERS[selected_algorithm_key]
+        
+            # Visualization‑Tracker erzeugen (Callback + Speicher für Pfad & Werte)
+            visualization_callback, path_hist, loss_hist = create_visualization_tracker(
+                current_func_obj, x_range, y_range, contour_levels, minima
+            )
+        
+            # Optimierung starten
+            result = optimizer_fn(
+                func=current_func_obj,
+                x0=start_point,
+                callback=visualization_callback,
+                **optimizer_params
+            )
+        
+            # Ergebnisse extrahieren
+            best_x            = result.x_best
+            best_history      = result.history
+            best_loss_history = result.loss_history
+            status            = result.status
             
             # Speichere Ergebnisse
             algorithm_display_name = f"{algorithm_options[selected_algorithm]}"
