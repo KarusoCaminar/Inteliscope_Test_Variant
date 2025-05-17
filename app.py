@@ -187,18 +187,20 @@ with st.sidebar:
         st.session_state.ausgewählte_funktion = selected_function_name
     
     # Algorithmenauswahl
+    # 1) Auswahl des Algorithmus
     algorithm_options = {
-        "GD_Simple_LS": "Gradient Descent mit Liniensuche", # Schlüssel aus io.OPTIMIZERS_EXTENDED
-        "GD_Momentum": "Gradient Descent mit Momentum",   # Schlüssel aus io.OPTIMIZERS_EXTENDED
-        "Adam": "Adam Optimizer"                          # Schlüssel aus io.OPTIMIZERS_EXTENDED
+        "GD_Simple_LS": "Gradient Descent mit Liniensuche",
+        "GD_Momentum":  "Gradient Descent mit Momentum",
+        "Adam":         "Adam Optimizer"
     }
 
-    selected_key = st.selectbox(
-        "Algorithmus wählen",
-        options=list(algorithm_options.keys()),
-        format_func=lambda k: algorithm_options[k]
+    selected_algorithm_key = st.selectbox(
+        "Algorithmus auswählen",
+        list(algorithm_options.keys()),
+        format_func=lambda x: algorithm_options[x],
+        key="sb_algo_select"
     )
-    optimizer_fn = io.OPTIMIZERS[selected_key]
+
 
     selected_algorithm_key = st.selectbox(
         "Algorithmus auswählen",
@@ -223,7 +225,6 @@ with st.sidebar:
     
     # Parameter für den ausgewählten Algorithmus
     st.subheader("Algorithmus-Parameter")
-    
     optimizer_params = {}
 
      if selected_algorithm_key == "GD_Simple_LS":
@@ -475,37 +476,41 @@ with col1:
                     except:
                         pass
             
-# Top‑20 Optimierungspfade zeichnen (ersetzt bisherigen Block)
+# Top‑20 Optimierungspfade zeichnen
 paths_to_plot = []
-if st.session_state.optimierungsergebnisse:
-    # Nur Läufe für die aktuell ausgewählte Funktion
+if "optimierungsergebnisse" in st.session_state and st.session_state.optimierungsergebnisse:
+    # Nur Läufe für die aktuell ausgewählte Funktion filtern
     runs = [
         r for r in st.session_state.optimierungsergebnisse.values()
-        if r['function'] == st.session_state.ausgewählte_funktion and 'history' in r
+        if r.get('function') == st.session_state.ausgewählte_funktion and 'history' in r
     ]
+    
     # Nach finalem Loss sortieren (kleinster Wert = beste Lösung)
     runs_sorted = sorted(
         runs,
         key=lambda r: r.get('loss_history', [float('inf')])[-1]
     )
+    
     # Top 20 extrahieren
     for run in runs_sorted[:20]:
         hist = run.get('history')
         if hist:
             paths_to_plot.append(np.array(hist))
 
-# Zeichne jeden Pfad direkt
+# Top‑20 Pfade zeichnen
 for idx, path in enumerate(paths_to_plot):
     xs, ys = path[:, 0], path[:, 1]
-    #  Z-Werte berechnen und im Plot-Clip begrenzen wie bei der Oberfläche
+
+    # Z‑Werte berechnen und auf Z‑Grenzen clippen
     zs = []
     for x, y in zip(xs, ys):
         try:
-            v = current_func(np.array([x, y]))['value']
-            # Clip v auf z_min–z_max, die du oben berechnet hast
-            zs.append(min(max(v, z_min), z_max))
+            val = current_func(np.array([x, y]))['value']
+            val_clipped = np.clip(val, z_min, z_max)
+            zs.append(val_clipped)
         except:
             zs.append(np.nan)
+
     ax3d.plot(xs, ys, zs, marker='o', linewidth=1, markersize=3,
               alpha=0.6, label=f'Pfad {idx+1}')
 
@@ -641,7 +646,26 @@ vs.plot_3d_surface_and_paths(
                 st.pyplot(fig2d)
                 plt.close(fig2d)
 
-        
+# Direkte Optimierung ausführen (ohne run_simple_optimization)
+selected_optimizer = io.OPTIMIZERS[selected_algorithm_key]
+
+# Callback und Parameter sollten zuvor erzeugt worden sein:
+# visualization_callback, optimizer_params
+
+# Optimierung starten
+result = selected_optimizer(
+    func=current_func,
+    x0=start_point,
+    callback=visualization_callback,
+    **optimizer_params
+)
+
+# Resultate extrahieren
+best_x = result.x_best              # oder result.x, je nach Rückgabe
+best_history = result.history       # Pfad aller x_i
+best_loss_history = result.loss_history  # Funktionswerte
+status = result.status              # Status-String
+
         """
         Verbesserte Gradient Descent Implementierung für die Optimierung
         
@@ -969,6 +993,7 @@ status            = result.status
                 "status": status,
                 "timestamp": time.time()
             }
+
             
             # Zeige Zusammenfassung der Ergebnisse
             with results_container:
