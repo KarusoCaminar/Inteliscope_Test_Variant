@@ -266,39 +266,51 @@ with st.sidebar:
     tabs = st.tabs(["Optimierungsvisualisierung", "Funktionseditor", "Ergebnisvergleich", "Info & Hilfe"])
 
     #Optimierungsvisualisierung
-    with tabs[0]:
-    # Hole die aktuelle Funktion und Bereichs-Infos
+with tabs[0]:
+    # Einheitliche Initialisierung für die aktuelle Funktion und Metainfos
     current_func_obj = None
+    x_range = (-5, 5)
+    y_range = (-5, 5)
+    contour_levels = 30
     minima = None
-    contour_levels = 30  # Default
 
+    # 1. Standardfunktion aus der Funktionsbibliothek
     if st.session_state.ausgewählte_funktion in pf.MATH_FUNCTIONS_LIB:
-        current_func_info = pf.MATH_FUNCTIONS_LIB[st.session_state.ausgewählte_funktion]
-        current_func_obj = current_func_info["func"]
-        x_range = current_func_info["default_range"][0]
-        y_range = current_func_info["default_range"][1]
-        contour_levels = current_func_info.get("contour_levels", 40)
+        func_info = pf.MATH_FUNCTIONS_LIB[st.session_state.ausgewählte_funktion]
+        current_func_obj = func_info.get("func")
+        x_range = func_info.get("default_range", [(-5, 5), (-5, 5)])[0]
+        y_range = func_info.get("default_range", [(-5, 5), (-5, 5)])[1]
+        contour_levels = func_info.get("contour_levels", 40)
         try:
-            eval_point_for_meta = np.array([(x_range[0]+x_range[1])/2, (y_range[0]+y_range[1])/2])
-            if current_func_info.get("dimensions", 2) == 1:
-                eval_point_for_meta = np.array([(x_range[0]+x_range[1])/2])
-            func_meta_result = current_func_obj(eval_point_for_meta)
-            if "tooltip" in func_meta_result:
+            # Metainfos holen (z.B. Minima, Tooltip)
+            eval_point = np.array([(x_range[0] + x_range[1]) / 2, (y_range[0] + y_range[1]) / 2])
+            func_meta = current_func_obj(eval_point)
+            if "tooltip" in func_meta:
                 with st.expander("ℹ️ Über diese Funktion", expanded=False):
-                    st.markdown(func_meta_result["tooltip"])
-            minima = func_meta_result.get("minima", None)
+                    st.markdown(func_meta["tooltip"])
+            minima = func_meta.get("minima", None)
         except Exception as e:
-            st.warning(f"Konnte Metadaten für {st.session_state.ausgewählte_funktion} nicht laden: {e}")
+            st.warning(f"Metadaten für {st.session_state.ausgewählte_funktion} konnten nicht geladen werden: {e}")
             minima = None
 
+    # 2. Benutzerdefinierte Funktion (Custom)
     elif st.session_state.ausgewählte_funktion in st.session_state.custom_funcs:
         current_func_obj = st.session_state.custom_funcs[st.session_state.ausgewählte_funktion]
-        func_meta_result = current_func_obj(np.array([0.0,0.0]))
-        x_range = func_meta_result.get("x_range", (-5,5))
-        y_range = func_meta_result.get("y_range", (-5,5))
-        contour_levels = 30
-        minima = None
+        # Versuche Metadaten aus der Custom-Function zu extrahieren
+        try:
+            func_meta = current_func_obj(np.array([0.0, 0.0]))
+            x_range = func_meta.get("x_range", (-5, 5))
+            y_range = func_meta.get("y_range", (-5, 5))
+            contour_levels = func_meta.get("contour_levels", 30)
+            minima = func_meta.get("minima", None)
+        except Exception:
+            # Falls die Funktion keinen dict zurückgibt, Default-Werte
+            x_range = (-5, 5)
+            y_range = (-5, 5)
+            contour_levels = 30
+            minima = None
 
+    # 3. Fehlerfall
     else:
         st.error("Die ausgewählte Funktion wurde nicht gefunden.")
         current_func_obj = None
