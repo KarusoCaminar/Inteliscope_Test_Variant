@@ -457,24 +457,24 @@ with col1:
                 zs = []
                 for x, y in zip(xs, ys):
                     try:
-                        val = current_func_obj(np.array([x, y]))['value']
-                        val_clipped = np.clip(val, z_min, z_max)
-                        zs.append(val_clipped)
-                    except:
-                        zs.append(np.nan)
+                    val = current_func_obj(np.array([x, y]))['value']
+                    val_clipped = np.clip(val, z_min, z_max)
+                    zs.append(val_clipped)
+                except:
+                    zs.append(np.nan)
 
                 ax3d.plot(xs, ys, zs, marker='o', linewidth=1, markersize=3,
                           alpha=0.6, label=f'Pfad {idx+1}')
 
-            # Falls du weiterhin Deine Oberfläche plus Factory‑Aufruf verwenden willst,
-            # entferne den alten paths_dict-Parameter oder setze ihn auf None:
-            vs.plot_3d_surface_and_paths(
-                fig3d, ax3d, current_func_obj,
-                p1_range=x_range, p2_range=y_range,
-                title=f"3D: {st.session_state.ausgewählte_funktion}",
-                view=(st.session_state.elev_3d, st.session_state.azim_3d)
-                # paths_dict entfällt hier, da wir direkt in Matplotlib gezeichnet haben
-            )
+                # Falls du weiterhin Deine Oberfläche plus Factory‑Aufruf verwenden willst,
+                # entferne den alten paths_dict-Parameter oder setze ihn auf None:
+                vs.plot_3d_surface_and_paths(
+                    fig3d, ax3d, current_func_obj,
+                    p1_range=x_range, p2_range=y_range,
+                    title=f"3D: {st.session_state.ausgewählte_funktion}",
+                    view=(st.session_state.elev_3d, st.session_state.azim_3d)
+                    # paths_dict entfällt hier, da wir direkt in Matplotlib gezeichnet haben
+                )
 
                 # Kamera & Colorbar
                 ax3d.view_init(elev=st.session_state.elev_3d, azim=st.session_state.azim_3d)
@@ -483,7 +483,7 @@ with col1:
                 except:
                     pass
                 fig3d.colorbar(surf, ax=ax3d, shrink=0.5, aspect=5)
-
+                
                 # Ausgabe
                 ax3d.plot_surface(X_plot, Y_plot, Z_plot_vals, cmap='viridis', alpha=0.8)
                 ax3d.set_title(f"3D: {st.session_state.ausgewählte_funktion}")
