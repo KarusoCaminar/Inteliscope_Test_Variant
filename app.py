@@ -597,25 +597,25 @@ with col1:
                 st.pyplot(fig2d)
                 plt.close(fig2d)
 
-# Direkte Optimierung ausführen (ohne run_simple_optimization)
-selected_optimizer = io.OPTIMIZERS[selected_algorithm_key]
-
-# Callback und Parameter sollten zuvor erzeugt worden sein:
-# visualization_callback, optimizer_params
-
-# Optimierung starten
-result = selected_optimizer(
-    func=current_func_obj,
-    x0=start_point,
-    callback=visualization_callback,
-    **optimizer_params
-)
-
-# Resultate extrahieren
-best_x = result.x_best              # oder result.x, je nach Rückgabe
-best_history = result.history       # Pfad aller x_i
-best_loss_history = result.loss_history  # Funktionswerte
-status = result.status              # Status-String
+                # Direkte Optimierung ausführen (ohne run_simple_optimization)
+                selected_optimizer = io.OPTIMIZERS[selected_algorithm_key]
+                
+                # Callback und Parameter sollten zuvor erzeugt worden sein:
+                # visualization_callback, optimizer_params
+                
+                # Optimierung starten
+                result = selected_optimizer(
+                    func=current_func_obj,
+                    x0=start_point,
+                    callback=visualization_callback,
+                    **optimizer_params
+                )
+                
+                # Resultate extrahieren
+                best_x = result.x_best              # oder result.x, je nach Rückgabe
+                best_history = result.history       # Pfad aller x_i
+                best_loss_history = result.loss_history  # Funktionswerte
+                status = result.status              # Status-String
 
         """
         Verbesserte Gradient Descent Implementierung für die Optimierung
