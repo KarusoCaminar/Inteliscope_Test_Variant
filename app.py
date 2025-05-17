@@ -598,7 +598,7 @@ with col1:
                 plt.close(fig2d)
 
                 # Direkte Optimierung ausführen (ohne run_simple_optimization)
-                selected_optimizer = io.OPTIMIZERS[selected_algorithm_key]
+                selected_optimizer = iopt.OPTIMIZERS[selected_algorithm_key]
                 
                 # Callback und Parameter sollten zuvor erzeugt worden sein:
                 # visualization_callback, optimizer_params
