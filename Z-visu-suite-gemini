@@ -1,1 +1,8 @@
+Code ist ein weiter Slider kann noch hinzugefügt werden (wurde wegen evlt Fehlern entfernt)
 
+cols_sliders = st.columns(3) # Renamed to avoid conflict
+st.session_state.elev_3d = cols_sliders[0].slider("Elevation", 0, 90, st.session_state.elev_3d, key="elev_slider")
+st.session_state.azim_3d = cols_sliders[1].slider("Azimuth", 0, 360, st.session_state.azim_3d, key="azim_slider")
+
+-> diese Zeile ist zum einfügen: 
+st.session_state.dist_3d = cols_sliders[2].slider("Zoom (MPL)", 5, 20, st.session_state.dist_3d, key="dist_slider_mpl")key="dist_slider")
