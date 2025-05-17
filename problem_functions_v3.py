@@ -252,6 +252,7 @@ MATH_FUNCTIONS_LIB = {
 def create_custom_function(expr_str, name="Custom", x_range=(-5, 5), y_range=(-5, 5)):
     """
     Erstellt eine benutzerdefinierte Funktion aus einem String-Ausdruck.
+    Akzeptiert viele mathematische Schreibweisen und Synonyme.
     
     Args:
         expr_str: String-Darstellung der mathematischen Funktion (mit X und Y als Variablen)
@@ -263,34 +264,35 @@ def create_custom_function(expr_str, name="Custom", x_range=(-5, 5), y_range=(-5
         Funktion mit der üblichen Schnittstelle
     """
     try:
-        # Stelle sicher, dass die Symbole X und Y verwendet werden
-        # (obwohl _create_function_from_sympy intern X und Y verwendet)
-        # Es ist besser, wenn der Benutzer auch X und Y eingibt, um Konsistenz mit Sympy zu wahren.
-        # Die Ersetzung in app.py ist gut, aber hier könnte man es auch erwähnen.
+        # Automatische Ersetzung typischer Synonyme für mathematische Funktionen
+        expr_str = expr_str.replace('ln', 'log').replace('tg', 'tan')
+        expr_str = expr_str.replace('abs', 'Abs')  # Für SymPy ist Abs(x) richtig
         
-        # Parse den Ausdruck
-        # Wichtig: local_dict für Sicherheit und um nur erlaubte Funktionen/Symbole zuzulassen
-        local_dict = {"X": X, "Y": Y, "sp": sp, 
-                      "sin": sp.sin, "cos": sp.cos, "exp": sp.exp, "log": sp.log, 
-                      "sqrt": sp.sqrt, "Abs": sp.Abs, "tan": sp.tan, "pi": sp.pi}
+        # Sehr großzügiges local_dict (SymPy + Standard)
+        local_dict = {
+            "X": X, "Y": Y, "x": X, "y": Y,  # Variablen, egal ob groß/klein
+            "e": sp.E, "E": sp.E,            # Eulersche Zahl
+            "pi": sp.pi, "Pi": sp.pi, "π": sp.pi,
+            "sin": sp.sin, "cos": sp.cos, "tan": sp.tan, "exp": sp.exp,
+            "sqrt": sp.sqrt, "Abs": sp.Abs, "abs": sp.Abs,
+            "log": sp.log, "ln": sp.log,     # ln als log
+            "arcsin": sp.asin, "arccos": sp.acos, "arctan": sp.atan,
+            "asin": sp.asin, "acos": sp.acos, "atan": sp.atan,
+            "sinh": sp.sinh, "cosh": sp.cosh, "tanh": sp.tanh,
+            "min": min, "max": max,
+            # Sicherheitsmaßnahmen (optional): keine eval, keine os, keine sys usw.
+        }
+        # SymPy-Parsing
         expr = sp.sympify(expr_str, locals=local_dict)
-        
-        # Erstelle die Funktion
-        # Die Wrapper-Funktion sollte immer ein 2D-Array erwarten, auch wenn die Funktion nur von X abhängt.
-        # Die _create_function_from_sympy ist bereits für 2D ausgelegt.
-        
         custom_func_obj = _create_function_from_sympy(
             expr,
             name=name,
             tooltip=f"Benutzerdefinierte Funktion: {expr_str}",
             x_range=x_range,
             y_range=y_range
-            # Minima für benutzerdefinierte Funktionen sind nicht automatisch bekannt
         )
-        
         return custom_func_obj
     except Exception as e:
-        # Bei Fehler gib eine Fehlermeldung zurück und eine Dummy-Funktion
         print(f"Error creating custom function '{name}' with expr '{expr_str}': {e}")
         def error_func_wrapper(x_input_err: np.ndarray) -> Dict[str, Any]:
             return {
