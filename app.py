@@ -476,19 +476,19 @@ with col1:
                 # paths_dict entfällt hier, da wir direkt in Matplotlib gezeichnet haben
             )
 
-                    # Kamera & Colorbar
-                    ax3d.view_init(elev=st.session_state.elev_3d, azim=st.session_state.azim_3d)
-                    try:
-                        ax3d.dist = st.session_state.dist_3d / 10
-                    except:
-                        pass
-                    fig3d.colorbar(surf, ax=ax3d, shrink=0.5, aspect=5)
+                # Kamera & Colorbar
+                ax3d.view_init(elev=st.session_state.elev_3d, azim=st.session_state.azim_3d)
+                try:
+                    ax3d.dist = st.session_state.dist_3d / 10
+                except:
+                    pass
+                fig3d.colorbar(surf, ax=ax3d, shrink=0.5, aspect=5)
 
-                    # Ausgabe
-                    ax3d.plot_surface(X_plot, Y_plot, Z_plot_vals, cmap='viridis', alpha=0.8)
-                    ax3d.set_title(f"3D: {st.session_state.ausgewählte_funktion}")
-                    st.pyplot(fig3d)
-                    plt.close(fig3d)
+                # Ausgabe
+                ax3d.plot_surface(X_plot, Y_plot, Z_plot_vals, cmap='viridis', alpha=0.8)
+                ax3d.set_title(f"3D: {st.session_state.ausgewählte_funktion}")
+                st.pyplot(fig3d)
+                plt.close(fig3d)
     
     with col2:
         # Erstelle 2D-Konturplot mit matplotlib und füge Kontrollen hinzu
