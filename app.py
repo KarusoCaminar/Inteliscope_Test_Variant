@@ -168,33 +168,35 @@ with st.sidebar:
     
     # Funktionsauswahl
     function_list = list(pf.MATH_FUNCTIONS_LIB.keys())
-    custom_funcs = list(st.session_state.custom_funcs.keys())
+    custom_funcs_keys = list(st.session_state.custom_funcs.keys())
     
     all_functions = function_list.copy()
-    if custom_funcs:
+    if custom_funcs_keys:
         all_functions.append("----------")
-        all_functions.extend(custom_funcs)
+        all_functions.extend(custom_funcs_keys)
     
-    selected_function = st.selectbox(
+    selected_function_name = st.selectbox(
         "Funktion auswählen",
         all_functions,
-        index=all_functions.index(st.session_state.ausgewählte_funktion) if st.session_state.ausgewählte_funktion in all_functions else 0
+        index=all_functions.index(st.session_state.ausgewählte_funktion) if st.session_state.ausgewählte_funktion in all_functions else 0,
+        key="sb_func_select"
     )
     
-    if selected_function != "----------":
-        st.session_state.ausgewählte_funktion = selected_function
+    if selected_function_name != "----------":
+        st.session_state.ausgewählte_funktion = selected_function_name
     
     # Algorithmenauswahl
     algorithm_options = {
-        "GD_Simple_LS": "Gradient Descent mit Liniensuche",
-        "GD_Momentum": "Gradient Descent mit Momentum",
-        "Adam": "Adam Optimizer"
+        "GD_Simple_LS": "Gradient Descent mit Liniensuche", # Schlüssel aus io.OPTIMIZERS_EXTENDED
+        "GD_Momentum": "Gradient Descent mit Momentum",   # Schlüssel aus io.OPTIMIZERS_EXTENDED
+        "Adam": "Adam Optimizer"                          # Schlüssel aus io.OPTIMIZERS_EXTENDED
     }
     
-    selected_algorithm = st.selectbox(
+    selected_algorithm_key = st.selectbox(
         "Algorithmus auswählen",
         list(algorithm_options.keys()),
-        format_func=lambda x: algorithm_options[x]
+        format_func=lambda x: algorithm_options[x],
+        key="sb_algo_select"
     )
     
     # Optimierungsstrategie
@@ -207,7 +209,8 @@ with st.sidebar:
     selected_strategy = st.selectbox(
         "Strategie auswählen",
         list(strategy_options.keys()),
-        format_func=lambda x: strategy_options[x]
+        format_func=lambda x: strategy_options[x],
+        key="sb_strategy_select"
     )
     
     # Parameter für den ausgewählten Algorithmus
