@@ -248,22 +248,22 @@ with st.sidebar:
             multi_params['min_improvement'] = st.slider("Min. Verbesserung für weitere Starts", 0.001, 0.1, 0.01, format="%.3f", key="ad_min_improvement_slider")
             multi_params['seed'] = st.slider("Seed", 0, 100, 42, key="ad_seed_slider")
 
-    start_optimization = st.button("Optimierung starten", use_container_width=True)
-    if st.button("Alle Ergebnisse zurücksetzen", use_container_width=True):
-        st.session_state.optimierungsergebnisse = {}
-        st.rerun()
-
     # Button zum Starten der Optimierung
     start_optimization = st.button("Optimierung starten", use_container_width=True)
 
     # Button zum Zurücksetzen aller Ergebnisse
-    if st.button("Alle Ergebnisse zurücksetzen", use_container_width=True):
+    if st.button("Alle Ergebnisse zurücksetzen", use_container_width=True, key="reset_results_main"):
         st.session_state.optimierungsergebnisse = {}
         st.rerun()
 
     # Hauptbereich für Visualisierung
     # Tabs für verschiedene Visualisierungen und Interaktionen
-    tabs = st.tabs(["Optimierungsvisualisierung", "Funktionseditor", "Ergebnisvergleich", "Info & Hilfe"])
+    tabs = st.tabs([
+        "Optimierungsvisualisierung", 
+        "Funktionseditor", 
+        "Ergebnisvergleich", 
+        "Info & Hilfe"
+    ])
 
     #Optimierungsvisualisierung
 with tabs[0]:
