@@ -659,22 +659,22 @@ with col1:
         for i in range(max_iter):
             # Berechne Gradientennorm für Reporting
             grad_norm = np.linalg.norm(gradient)
-            
+
             # Momentum-basierte Aktualisierung
             if use_momentum:
                 velocity = momentum * velocity - current_lr * gradient
                 step = velocity
             else:
                 step = -current_lr * gradient
-            
+
             # Berechne neue Position
             x_new = x + step
-            
+
             # Evaluiere an der neuen Position
             result_new = func(x_new)
             value_new = result_new.get('value', float('inf'))
             gradient_new = result_new.get('gradient', np.zeros_like(x))
-            
+
             # Adaptive Lernratenanpassung
             if use_adaptive_lr:
                 if value_new < value:  # Verbesserung
@@ -682,27 +682,27 @@ with col1:
                     if value_new < best_value:
                         best_value = value_new
                         patience_counter = 0
-                    
+
                     # Erhöhe Lernrate vorsichtig, wenn wir uns kontinuierlich verbessern
                     if patience_counter == 0:
                         current_lr = min(current_lr * lr_increase_factor, 0.1)
-                    
+
                     # Akzeptiere den Schritt
                     x = x_new
                     value = value_new
                     gradient = gradient_new
-                    
+
                     # Info-Text aktualisieren
                     info_text = f"Schritt akzeptiert, LR: {current_lr:.6f}"
                 else:  # Verschlechterung
                     patience_counter += 1
-                    
+
                     # Reduziere Lernrate, wenn wir uns mehrmals verschlechtern
                     if patience_counter >= patience:
                         current_lr = max(current_lr * lr_reduce_factor, min_lr)
                         patience_counter = 0
                         info_text = f"Lernrate reduziert auf: {current_lr:.6f}"
-                    
+
                     # Verwerfe diesen Schritt und versuche es mit reduzierter Lernrate erneut
                     continue
             else:
@@ -710,23 +710,23 @@ with col1:
                 x = x_new
                 value = value_new
                 gradient = gradient_new
-            
+
             # Speichere Verlauf
             x_history.append(x.copy())
             loss_history.append(value)
-            
+
             # Rufe Callback auf, falls vorhanden
             if callback:
                 callback(i, x, value, grad_norm, f"Iteration {i+1}/{max_iter}, {info_text}")
-            
+
             # Abbruchkriterium: Wenn Gradient sehr klein wird
             if grad_norm < epsilon:
                 return x, x_history, loss_history, f"Konvergenz erreicht (Gradientennorm < {epsilon})"
-            
+
             # Abbruchkriterium: Wenn Lernrate zu klein wird
             if current_lr < min_lr:
                 return x, x_history, loss_history, f"Minimale Lernrate erreicht ({min_lr})"
-        
+
         return x, x_history, loss_history, f"Max. Iterationen erreicht ({max_iter})"
     
     def create_visualization_tracker(func, x_range, y_range, contour_levels, minima):
