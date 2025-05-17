@@ -886,7 +886,7 @@ with col1:
             """)
             
             # Direkte Optimierung ausführen via io.OPTIMIZERS
-            optimizer_fn = io.OPTIMIZERS[selected_algorithm_key]
+            optimizer_fn = iopt.OPTIMIZERS[selected_algorithm_key]
         
             # Visualization‑Tracker erzeugen (Callback + Speicher für Pfad & Werte)
             visualization_callback, path_hist, loss_hist = create_visualization_tracker(
