@@ -617,20 +617,6 @@ with col1:
                 best_loss_history = result.loss_history  # Funktionswerte
                 status = result.status              # Status-String
 
-                """
-                Verbesserte Gradient Descent Implementierung für die Optimierung
-                
-                Parameter:
-                - func: Die zu optimierende Funktion
-                - start_point: Startpunkt
-                - max_iter: Maximale Anzahl an Iterationen
-                - learning_rate: Initiale Lernrate
-                - epsilon: Numerische Stabilität und Abbruchtoleranz
-                - momentum: Momentum-Faktor (falls use_momentum=True)
-                - use_momentum: Ob Momentum verwendet werden soll
-                - use_adaptive_lr: Ob die Lernrate adaptiv angepasst werden soll
-                - callback: Callback-Funktion für Visualisierung
-                """
                 x = start_point.copy()
                 x_history = [x.copy()]
                 loss_history = []
