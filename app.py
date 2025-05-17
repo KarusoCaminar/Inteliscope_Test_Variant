@@ -218,11 +218,12 @@ with st.sidebar:
     
     optimizer_params = {}
 
-    if selected_algorithm == "GD_Simple_LS":
-        max_iter = st.slider("Max. Iterationen", 100, 5000, 1000, step=100)
-        step_norm_tol = st.slider("Schrittnorm Toleranz", 1e-12, 1e-3, 1e-7, format="%.0e")
-        func_impr_tol = st.slider("Funktionsverbesserung Toleranz", 1e-12, 1e-3, 1e-9, format="%.0e")
-        initial_t_ls = st.slider("Initialer Liniensuchschritt", 1e-6, 1.0, 0.1, format="%.0e")
+     if selected_algorithm_key == "GD_Simple_LS":
+        optimizer_params['max_iter'] = st.slider("Max. Iterationen", 100, 5000, 1000, step=100, key="gd_max_iter_slider")
+        optimizer_params['step_norm_tol'] = st.slider("Schrittnorm Toleranz", 1e-12, 1e-3, 1e-7, format="%.0e", key="gd_step_tol_slider")
+        optimizer_params['func_impr_tol'] = st.slider("Funktionsverbesserung Toleranz", 1e-12, 1e-3, 1e-9, format="%.0e", key="gd_func_tol_slider")
+        optimizer_params['initial_t_ls'] = st.slider("Initialer Liniensuchschritt", 1e-6, 1.0, 0.1, format="%.0e", key="gd_init_t_ls_slider")
+        # Die Factory create_gd_simple_ls in improved_optimizer.py erwartet diese Schlüssel.
 
         optimizer_params = {
             "max_iter": max_iter,
@@ -231,11 +232,13 @@ with st.sidebar:
             "initial_t_ls": initial_t_ls
         }
 
-    elif selected_algorithm == "GD_Momentum":
-        max_iter = st.slider("Max. Iterationen", 100, 5000, 1000, step=100)
-        learning_rate = st.slider("Lernrate", 1e-5, 1.0, 0.05, format="%.4f")
-        momentum_beta = st.slider("Momentum Beta", 0.0, 0.999, 0.95, format="%.3f")
-        grad_norm_tol = st.slider("Gradientennorm Toleranz", 1e-12, 1e-3, 1e-7, format="%.0e")
+    elif selected_algorithm_key == "GD_Momentum":
+        optimizer_params['max_iter'] = st.slider("Max. Iterationen", 100, 5000, 1000, step=100, key="gdm_max_iter_slider")
+        optimizer_params['learning_rate'] = st.slider("Lernrate", 1e-5, 1.0, 0.05, format="%.4f", key="gdm_lr_slider")
+        optimizer_params['momentum_beta'] = st.slider("Momentum Beta", 0.0, 0.999, 0.95, format="%.3f", key="gdm_beta_slider")
+        optimizer_params['grad_norm_tol'] = st.slider("Gradientennorm Toleranz", 1e-12, 1e-3, 1e-7, format="%.0e", key="gdm_grad_tol_slider")
+        # Die Factory create_gd_momentum in improved_optimizer.py erwartet diese Schlüssel.
+
 
         optimizer_params = {
             "max_iter": max_iter,
@@ -244,12 +247,15 @@ with st.sidebar:
             "grad_norm_tol": grad_norm_tol
         }
 
-    elif selected_algorithm == "Adam":
-        max_iter = st.slider("Max. Iterationen", 100, 5000, 1000, step=100)
-        learning_rate = st.slider("Lernrate", 1e-5, 1.0, 0.005, format="%.5f")
-        beta1 = st.slider("Beta1 (Momentum)", 0.0, 0.999, 0.95, format="%.3f")
-        beta2 = st.slider("Beta2 (RMSProp)", 0.0, 0.9999, 0.9995, format="%.4f")
-        epsilon = st.slider("Epsilon", 1e-12, 1e-6, 1e-8, format="%.0e")
+    elif selected_algorithm_key == "Adam":
+        optimizer_params['max_iter'] = st.slider("Max. Iterationen", 100, 5000, 1000, step=100, key="adam_max_iter_slider")
+        optimizer_params['learning_rate'] = st.slider("Lernrate", 1e-5, 1.0, 0.005, format="%.5f", key="adam_lr_slider")
+        optimizer_params['beta1'] = st.slider("Beta1 (Momentum)", 0.0, 0.999, 0.95, format="%.3f", key="adam_beta1_slider")
+        optimizer_params['beta2'] = st.slider("Beta2 (RMSProp)", 0.0, 0.9999, 0.9995, format="%.4f", key="adam_beta2_slider")
+        optimizer_params['epsilon'] = st.slider("Epsilon (für Stabilität)", 1e-12, 1e-6, 1e-8, format="%.0e", key="adam_epsilon_slider") # Dieser Epsilon-Wert wird jetzt verwendet!
+        optimizer_params['grad_norm_tol'] = st.slider("Gradientennorm Toleranz", 1e-12, 1e-3, 1e-7, format="%.0e", key="adam_grad_tol_slider") # Hinzugefügt für Konsistenz
+        # Die Factory create_adam in improved_optimizer.py erwartet diese Schlüssel.
+    
 
         optimizer_params = {
             "max_iter": max_iter,
@@ -260,44 +266,47 @@ with st.sidebar:
         }
     
     # Parameter für die Optimierungsstrategie
-    if selected_strategy != "single":
-        st.subheader("Strategie-Parameter")
-        
-        multi_params = {}
-        
-        if selected_strategy == "multi_start":
-            num_starts = st.slider("Anzahl der Starts", 2, 20, 5)
-            use_challenging_starts = st.checkbox("Herausfordernde Startpunkte", value=True)
-            multi_seed = st.slider("Seed", 0, 100, 42)
-            
-            multi_params = {
-                "num_starts": num_starts,
-                "use_challenging_starts": use_challenging_starts,
-                "seed": multi_seed
-            }
-            
-        elif selected_strategy == "adaptive":
-            initial_starts = st.slider("Initiale Anzahl der Starts", 2, 10, 3)
-            max_starts = st.slider("Maximale Anzahl der Starts", initial_starts, 30, 10)
-            min_improvement = st.slider("Min. Verbesserung für weitere Starts", 0.001, 0.1, 0.01, format="%.3f")
-            adaptive_seed = st.slider("Seed", 0, 100, 42)
-            
-            multi_params = {
-                "initial_starts": initial_starts,
-                "max_starts": max_starts,
-                "min_improvement": min_improvement,
-                "seed": adaptive_seed
-            }
-    else:
-        multi_params = {}
+# Strategie-Parameter definieren
+multi_params = {}  # Standardmäßig leer
+
+if selected_strategy != "single":
+    st.subheader("Strategie-Parameter")
     
-    # Button zum Starten der Optimierung
-    start_optimization = st.button("Optimierung starten", use_container_width=True)
+    if selected_strategy == "multi_start":
+        multi_params['n_starts'] = st.slider(
+            "Anzahl der Starts", 2, 20, 5, key="ms_n_starts_slider"
+        )
+        multi_params['use_challenging_starts'] = st.checkbox(
+            "Herausfordernde Startpunkte", value=True, key="ms_challenging_checkbox"
+        )
+        multi_params['seed'] = st.slider(
+            "Seed", 0, 100, 42, key="ms_seed_slider"
+        )
     
-    # Button zum Zurücksetzen aller Ergebnisse
-    if st.button("Alle Ergebnisse zurücksetzen", use_container_width=True):
-        st.session_state.optimierungsergebnisse = {}
-        st.rerun()
+    elif selected_strategy == "adaptive":
+        multi_params['initial_starts'] = st.slider(
+            "Initiale Anzahl der Starts", 2, 10, 3, key="ad_initial_starts_slider"
+        )
+        multi_params['max_starts'] = st.slider(
+            "Maximale Anzahl der Starts",
+            multi_params['initial_starts'], 30, 10,
+            key="ad_max_starts_slider"
+        )
+        multi_params['min_improvement'] = st.slider(
+            "Min. Verbesserung für weitere Starts", 0.001, 0.1, 0.01,
+            format="%.3f", key="ad_min_improvement_slider"
+        )
+        multi_params['seed'] = st.slider(
+            "Seed", 0, 100, 42, key="ad_seed_slider"
+        )
+
+# Button zum Starten der Optimierung
+start_optimization = st.button("Optimierung starten", use_container_width=True)
+
+# Button zum Zurücksetzen aller Ergebnisse
+if st.button("Alle Ergebnisse zurücksetzen", use_container_width=True):
+    st.session_state.optimierungsergebnisse = {}
+    st.rerun()
 
 # Hauptbereich für Visualisierung
 # Tabs für verschiedene Visualisierungen und Interaktionen
