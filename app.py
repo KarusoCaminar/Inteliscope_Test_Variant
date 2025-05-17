@@ -11,6 +11,7 @@ import sympy as sp
 import re
 import time
 import os
+import io
 
 # Importiere eigene Module
 import problem_functions_v3 as pf
@@ -191,7 +192,14 @@ with st.sidebar:
         "GD_Momentum": "Gradient Descent mit Momentum",   # Schlüssel aus io.OPTIMIZERS_EXTENDED
         "Adam": "Adam Optimizer"                          # Schlüssel aus io.OPTIMIZERS_EXTENDED
     }
-    
+
+    selected_key = st.selectbox(
+        "Algorithmus wählen",
+        options=list(algorithm_options.keys()),
+        format_func=lambda k: algorithm_options[k]
+    )
+    optimizer_fn = io.OPTIMIZERS[selected_key]
+
     selected_algorithm_key = st.selectbox(
         "Algorithmus auswählen",
         list(algorithm_options.keys()),
@@ -632,7 +640,8 @@ vs.plot_3d_surface_and_paths(
                 # Plot anzeigen
                 st.pyplot(fig2d)
                 plt.close(fig2d)
-    
+
+        
         """
         Verbesserte Gradient Descent Implementierung für die Optimierung
         
@@ -927,17 +936,27 @@ vs.plot_3d_surface_and_paths(
             - Adaptive Lernrate: {'Ein' if use_adaptive_lr else 'Aus'}
             """)
             
-            # Direkte Optimierung ausführen
-            best_x, best_history, best_loss_history, status = run_simple_optimization(
-                current_func, start_point,
-                max_iter=max_iter,
-                learning_rate=learning_rate,
-                epsilon=epsilon,
-                momentum=momentum_value,
-                use_momentum=use_momentum,
-                use_adaptive_lr=use_adaptive_lr,
-                callback=visualization_callback
-            )
+    # Direkte Optimierung ausführen via io.OPTIMIZERS
+    optimizer_fn = io.OPTIMIZERS[selected_algorithm_key]
+
+    # Visualization‑Tracker erzeugen (Callback + Speicher für Pfad & Werte)
+    visualization_callback, path_hist, loss_hist = create_visualization_tracker(
+        current_func_obj, x_range, y_range, contour_levels, minima
+    )
+
+    # Optimierung starten
+    result = optimizer_fn(
+        func=current_func,
+        x0=start_point,
+        callback=visualization_callback,
+        **optimizer_params
+    )
+
+# Ergebnisse extrahieren
+best_x            = result.x_best
+best_history      = result.history
+best_loss_history = result.loss_history
+status            = result.status
             
             # Speichere Ergebnisse
             algorithm_display_name = f"{algorithm_options[selected_algorithm]}"
