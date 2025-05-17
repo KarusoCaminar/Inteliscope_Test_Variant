@@ -11,13 +11,12 @@ import sympy as sp
 import re
 import time
 import os
-import io
 
 # Importiere eigene Module
 import problem_functions_v3 as pf
 import optimization_algorithms_v3 as oa
 import visualization_suite_v3 as vs
-import improved_optimizer as io
+import improved_optimizer as iopt  # Renamed to avoid conflict with 'io'
 import data_manager as dm
 
 # Seitenkonfiguration mit verbesserten Einstellungen
@@ -146,14 +145,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Initialisieren der Session-State-Variablen, falls sie noch nicht existieren
-if 'optimierungsergebnisse' not in st.session_state:
-    st.session_state.optimierungsergebnisse = {}
-if 'custom_funcs' not in st.session_state:
-    st.session_state.custom_funcs = {}
-if 'ausgewählte_funktion' not in st.session_state:
-    st.session_state.ausgewählte_funktion = "Rosenbrock"
-if 'custom_func_count' not in st.session_state:
-    st.session_state.custom_func_count = 0
+for key, default in [
+    ('optimierungsergebnisse', {}),
+    ('custom_funcs', {}),
+    ('ausgewählte_funktion', "Rosenbrock"),
+    ('custom_func_count', 0)
+]:
+    if key not in st.session_state:
+        st.session_state[key] = default
 
 # Header mit verbessertem Design
 st.markdown("""
@@ -186,22 +185,12 @@ with st.sidebar:
     if selected_function_name != "----------":
         st.session_state.ausgewählte_funktion = selected_function_name
     
-    # Algorithmenauswahl
-    # 1) Auswahl des Algorithmus
+    # Only one algorithm selectbox with unique key
     algorithm_options = {
         "GD_Simple_LS": "Gradient Descent mit Liniensuche",
         "GD_Momentum":  "Gradient Descent mit Momentum",
         "Adam":         "Adam Optimizer"
     }
-
-    selected_algorithm_key = st.selectbox(
-        "Algorithmus auswählen",
-        list(algorithm_options.keys()),
-        format_func=lambda x: algorithm_options[x],
-        key="sb_algo_select"
-    )
-
-
     selected_algorithm_key = st.selectbox(
         "Algorithmus auswählen",
         list(algorithm_options.keys()),
@@ -209,13 +198,12 @@ with st.sidebar:
         key="sb_algo_select"
     )
     
-    # Optimierungsstrategie
+    # Strategy selection
     strategy_options = {
         "single": "Einzelne Optimierung",
         "multi_start": "Multi-Start Optimierung",
         "adaptive": "Adaptive Multi-Start"
     }
-    
     selected_strategy = st.selectbox(
         "Strategie auswählen",
         list(strategy_options.keys()),
@@ -223,114 +211,70 @@ with st.sidebar:
         key="sb_strategy_select"
     )
     
-    # Parameter für den ausgewählten Algorithmus
+    # Algorithm parameters (fixed logic)
     st.subheader("Algorithmus-Parameter")
     optimizer_params = {}
-
-     if selected_algorithm_key == "GD_Simple_LS":
+    if selected_algorithm_key == "GD_Simple_LS":
         optimizer_params['max_iter'] = st.slider("Max. Iterationen", 100, 5000, 1000, step=100, key="gd_max_iter_slider")
         optimizer_params['step_norm_tol'] = st.slider("Schrittnorm Toleranz", 1e-12, 1e-3, 1e-7, format="%.0e", key="gd_step_tol_slider")
         optimizer_params['func_impr_tol'] = st.slider("Funktionsverbesserung Toleranz", 1e-12, 1e-3, 1e-9, format="%.0e", key="gd_func_tol_slider")
         optimizer_params['initial_t_ls'] = st.slider("Initialer Liniensuchschritt", 1e-6, 1.0, 0.1, format="%.0e", key="gd_init_t_ls_slider")
-        # Die Factory create_gd_simple_ls in improved_optimizer.py erwartet diese Schlüssel.
-
-        optimizer_params = {
-            "max_iter": max_iter,
-            "step_norm_tol": step_norm_tol,
-            "func_impr_tol": func_impr_tol,
-            "initial_t_ls": initial_t_ls
-        }
 
     elif selected_algorithm_key == "GD_Momentum":
         optimizer_params['max_iter'] = st.slider("Max. Iterationen", 100, 5000, 1000, step=100, key="gdm_max_iter_slider")
         optimizer_params['learning_rate'] = st.slider("Lernrate", 1e-5, 1.0, 0.05, format="%.4f", key="gdm_lr_slider")
         optimizer_params['momentum_beta'] = st.slider("Momentum Beta", 0.0, 0.999, 0.95, format="%.3f", key="gdm_beta_slider")
         optimizer_params['grad_norm_tol'] = st.slider("Gradientennorm Toleranz", 1e-12, 1e-3, 1e-7, format="%.0e", key="gdm_grad_tol_slider")
-        # Die Factory create_gd_momentum in improved_optimizer.py erwartet diese Schlüssel.
-
-
-        optimizer_params = {
-            "max_iter": max_iter,
-            "learning_rate": learning_rate,
-            "momentum_beta": momentum_beta,
-            "grad_norm_tol": grad_norm_tol
-        }
 
     elif selected_algorithm_key == "Adam":
         optimizer_params['max_iter'] = st.slider("Max. Iterationen", 100, 5000, 1000, step=100, key="adam_max_iter_slider")
         optimizer_params['learning_rate'] = st.slider("Lernrate", 1e-5, 1.0, 0.005, format="%.5f", key="adam_lr_slider")
         optimizer_params['beta1'] = st.slider("Beta1 (Momentum)", 0.0, 0.999, 0.95, format="%.3f", key="adam_beta1_slider")
         optimizer_params['beta2'] = st.slider("Beta2 (RMSProp)", 0.0, 0.9999, 0.9995, format="%.4f", key="adam_beta2_slider")
-        optimizer_params['epsilon'] = st.slider("Epsilon (für Stabilität)", 1e-12, 1e-6, 1e-8, format="%.0e", key="adam_epsilon_slider") # Dieser Epsilon-Wert wird jetzt verwendet!
-        optimizer_params['grad_norm_tol'] = st.slider("Gradientennorm Toleranz", 1e-12, 1e-3, 1e-7, format="%.0e", key="adam_grad_tol_slider") # Hinzugefügt für Konsistenz
-        # Die Factory create_adam in improved_optimizer.py erwartet diese Schlüssel.
+        optimizer_params['epsilon'] = st.slider("Epsilon (für Stabilität)", 1e-12, 1e-6, 1e-8, format="%.0e", key="adam_epsilon_slider")
+        optimizer_params['grad_norm_tol'] = st.slider("Gradientennorm Toleranz", 1e-12, 1e-3, 1e-7, format="%.0e", key="adam_grad_tol_slider")
     
+    # Strategy parameters
+    multi_params = {}
+    if selected_strategy != "single":
+        st.subheader("Strategie-Parameter")
+        if selected_strategy == "multi_start":
+            multi_params['n_starts'] = st.slider("Anzahl der Starts", 2, 20, 5, key="ms_n_starts_slider")
+            multi_params['use_challenging_starts'] = st.checkbox("Herausfordernde Startpunkte", value=True, key="ms_challenging_checkbox")
+            multi_params['seed'] = st.slider("Seed", 0, 100, 42, key="ms_seed_slider")
+        elif selected_strategy == "adaptive":
+            multi_params['initial_starts'] = st.slider("Initiale Anzahl der Starts", 2, 10, 3, key="ad_initial_starts_slider")
+            multi_params['max_starts'] = st.slider("Maximale Anzahl der Starts", multi_params['initial_starts'], 30, 10, key="ad_max_starts_slider")
+            multi_params['min_improvement'] = st.slider("Min. Verbesserung für weitere Starts", 0.001, 0.1, 0.01, format="%.3f", key="ad_min_improvement_slider")
+            multi_params['seed'] = st.slider("Seed", 0, 100, 42, key="ad_seed_slider")
 
-        optimizer_params = {
-            "max_iter": max_iter,
-            "learning_rate": learning_rate,
-            "beta1": beta1,
-            "beta2": beta2,
-            "epsilon": epsilon
-        }
-    
-    # Parameter für die Optimierungsstrategie
-# Strategie-Parameter definieren
-multi_params = {}  # Standardmäßig leer
+    start_optimization = st.button("Optimierung starten", use_container_width=True)
+    if st.button("Alle Ergebnisse zurücksetzen", use_container_width=True):
+        st.session_state.optimierungsergebnisse = {}
+        st.rerun()
 
-if selected_strategy != "single":
-    st.subheader("Strategie-Parameter")
-    
-    if selected_strategy == "multi_start":
-        multi_params['n_starts'] = st.slider(
-            "Anzahl der Starts", 2, 20, 5, key="ms_n_starts_slider"
-        )
-        multi_params['use_challenging_starts'] = st.checkbox(
-            "Herausfordernde Startpunkte", value=True, key="ms_challenging_checkbox"
-        )
-        multi_params['seed'] = st.slider(
-            "Seed", 0, 100, 42, key="ms_seed_slider"
-        )
-    
-    elif selected_strategy == "adaptive":
-        multi_params['initial_starts'] = st.slider(
-            "Initiale Anzahl der Starts", 2, 10, 3, key="ad_initial_starts_slider"
-        )
-        multi_params['max_starts'] = st.slider(
-            "Maximale Anzahl der Starts",
-            multi_params['initial_starts'], 30, 10,
-            key="ad_max_starts_slider"
-        )
-        multi_params['min_improvement'] = st.slider(
-            "Min. Verbesserung für weitere Starts", 0.001, 0.1, 0.01,
-            format="%.3f", key="ad_min_improvement_slider"
-        )
-        multi_params['seed'] = st.slider(
-            "Seed", 0, 100, 42, key="ad_seed_slider"
-        )
+    # Button zum Starten der Optimierung
+    start_optimization = st.button("Optimierung starten", use_container_width=True)
 
-# Button zum Starten der Optimierung
-start_optimization = st.button("Optimierung starten", use_container_width=True)
+    # Button zum Zurücksetzen aller Ergebnisse
+    if st.button("Alle Ergebnisse zurücksetzen", use_container_width=True):
+        st.session_state.optimierungsergebnisse = {}
+        st.rerun()
 
-# Button zum Zurücksetzen aller Ergebnisse
-if st.button("Alle Ergebnisse zurücksetzen", use_container_width=True):
-    st.session_state.optimierungsergebnisse = {}
-    st.rerun()
+    # Hauptbereich für Visualisierung
+    # Tabs für verschiedene Visualisierungen und Interaktionen
+    tabs = st.tabs(["Optimierungsvisualisierung", "Funktionseditor", "Ergebnisvergleich", "Info & Hilfe"])
 
-# Hauptbereich für Visualisierung
-# Tabs für verschiedene Visualisierungen und Interaktionen
-tabs = st.tabs(["Optimierungsvisualisierung", "Funktionseditor", "Ergebnisvergleich", "Info & Hilfe"])
-
-#Optimierungsvisualisierung
-with tabs[0]:
-    # Hole die aktuelle Funktion
-    current_func_obj = None 
-    if st.session_state.ausgewählte_funktion in pf.MATH_FUNCTIONS_LIB:
-        current_func_info = pf.MATH_FUNCTIONS_LIB[st.session_state.ausgewählte_funktion]
-        current_func_obj = current_func_info["func"]
-        x_range = current_func_info["default_range"][0]
-        y_range = current_func_info["default_range"][1]
-        contour_levels = current_func_info.get("contour_levels", 40)
+    #Optimierungsvisualisierung
+    with tabs[0]:
+        # Hole die aktuelle Funktion
+        current_func_obj = None 
+        if st.session_state.ausgewählte_funktion in pf.MATH_FUNCTIONS_LIB:
+            current_func_info = pf.MATH_FUNCTIONS_LIB[st.session_state.ausgewählte_funktion]
+            current_func_obj = current_func_info["func"]
+            x_range = current_func_info["default_range"][0]
+            y_range = current_func_info["default_range"][1]
+            contour_levels = current_func_info.get("contour_levels", 40)
 
         # Zeige Tooltip für die Funktion, falls vorhanden
         # Evaluate once to get metadata like tooltip and minima
@@ -467,6 +411,57 @@ with col1:
             ax3d.set_zlabel('Funktionswert')
             ax3d.set_title(f"3D-Oberfläche: {st.session_state.ausgewählte_funktion}")
             
+    #Optimierungsvisualisierung
+    with tabs[0]:
+        # Hole die aktuelle Funktion
+        current_func_obj = None
+        if st.session_state.ausgewählte_funktion in pf.MATH_FUNCTIONS_LIB:
+            current_func_info = pf.MATH_FUNCTIONS_LIB[st.session_state.ausgewählte_funktion]
+            current_func_obj = current_func_info["func"]
+            x_range = current_func_info["default_range"][0]
+            y_range = current_func_info["default_range"][1]
+            contour_levels = current_func_info.get("contour_levels", 40)
+
+        # Zeige Tooltip für die Funktion, falls vorhanden
+        # Evaluate once to get metadata like tooltip and minima
+        # Use a standard point, ensure it's within typical bounds or handle potential errors
+        try:
+            eval_point_for_meta = np.array([(x_range[0]+x_range[1])/2, (y_range[0]+y_range[1])/2])
+            if current_func_info.get("dimensions", 2) == 1: # Handle 1D if ever introduced
+                    eval_point_for_meta = np.array([(x_range[0]+x_range[1])/2])
+
+            func_meta_result = current_func_obj(eval_point_for_meta)
+            if "tooltip" in func_meta_result:
+                with st.expander("ℹ️ Über diese Funktion", expanded=False):
+                    st.markdown(func_meta_result["tooltip"])
+            minima = func_meta_result.get("minima", None)
+        except Exception as e:
+            st.warning(f"Konnte Metadaten für {st.session_state.ausgewählte_funktion} nicht laden: {e}")
+            minima = None
+
+        # Berechne bekannte Minima, falls vorhanden
+        minima = func_result.get("minima", None)
+
+        elif st.session_state.ausgewählte_funktion in st.session_state.custom_funcs:
+            current_func_obj = st.session_state.custom_funcs[st.session_state.ausgewählte_funktion]
+            # Verwende Standardbereiche für benutzerdefinierte Funktionen oder store them
+            func_meta_result = current_func_obj(np.array([0.0,0.0])) # Test eval
+            x_range = func_meta_result.get("x_range", (-5,5)) # Get from custom func if stored
+            y_range = func_meta_result.get("y_range", (-5,5))
+            contour_levels = 30
+            minima = None # Custom functions don't have predefined minima typically
+        else:
+            st.error("Die ausgewählte Funktion wurde nicht gefunden.")
+            current_func_obj = None
+            x_range = (-5, 5)
+            y_range = (-5, 5)
+            contour_levels = 30
+            minima = None
+
+        # Layout für die Visualisierung
+        col1, col2 = st.columns([1, 1])
+
+        with col1:
             # Bekannte Minima
             if minima:
                 for m in minima:
@@ -475,69 +470,68 @@ with col1:
                         ax3d.scatter(m[0], m[1], zv, color='red', marker='+', s=120)
                     except:
                         pass
-            
-# Top‑20 Optimierungspfade zeichnen
-paths_to_plot = []
-if "optimierungsergebnisse" in st.session_state and st.session_state.optimierungsergebnisse:
-    # Nur Läufe für die aktuell ausgewählte Funktion filtern
-    runs = [
-        r for r in st.session_state.optimierungsergebnisse.values()
-        if r.get('function') == st.session_state.ausgewählte_funktion and 'history' in r
-    ]
-    
-    # Nach finalem Loss sortieren (kleinster Wert = beste Lösung)
-    runs_sorted = sorted(
-        runs,
-        key=lambda r: r.get('loss_history', [float('inf')])[-1]
-    )
-    
-    # Top 20 extrahieren
-    for run in runs_sorted[:20]:
-        hist = run.get('history')
-        if hist:
-            paths_to_plot.append(np.array(hist))
 
-# Top‑20 Pfade zeichnen
-for idx, path in enumerate(paths_to_plot):
-    xs, ys = path[:, 0], path[:, 1]
+            # Top-20 Optimierungspfade zeichnen
+            paths_to_plot = []
+            if "optimierungsergebnisse" in st.session_state and st.session_state.optimierungsergebnisse:
+                # Nur Läufe für die aktuell ausgewählte Funktion filtern
+                runs = [
+                    r for r in st.session_state.optimierungsergebnisse.values()
+                    if r.get('function') == st.session_state.ausgewählte_funktion and 'history' in r
+                ]
 
-    # Z‑Werte berechnen und auf Z‑Grenzen clippen
-    zs = []
-    for x, y in zip(xs, ys):
-        try:
-            val = current_func(np.array([x, y]))['value']
-            val_clipped = np.clip(val, z_min, z_max)
-            zs.append(val_clipped)
-        except:
-            zs.append(np.nan)
+                # Nach finalem Loss sortieren (kleinster Wert = beste Lösung)
+                runs_sorted = sorted(
+                    runs,
+                    key=lambda r: r.get('loss_history', [float('inf')])[-1]
+                )
 
-    ax3d.plot(xs, ys, zs, marker='o', linewidth=1, markersize=3,
-              alpha=0.6, label=f'Pfad {idx+1}')
+                # Top 20 extrahieren
+                for run in runs_sorted[:20]:
+                    hist = run.get('history')
+                    if hist:
+                        paths_to_plot.append(np.array(hist))
 
-# Falls du weiterhin Deine Oberfläche plus Factory‑Aufruf verwenden willst,
-# entferne den alten paths_dict-Parameter oder setze ihn auf None:
-vs.plot_3d_surface_and_paths(
-    fig3d, ax3d, current_func_obj,
-    p1_range=x_range, p2_range=y_range,
-    title=f"3D: {st.session_state.ausgewählte_funktion}",
-    view=(st.session_state.elev_3d, st.session_state.azim_3d)
-    # paths_dict entfällt hier, da wir direkt in Matplotlib gezeichnet haben
-)
+            # Top-20 Pfade zeichnen
+            for idx, path in enumerate(paths_to_plot):
+                xs, ys = path[:, 0], path[:, 1]
 
-            
-            # Kamera & Colorbar
-            ax3d.view_init(elev=st.session_state.elev_3d, azim=st.session_state.azim_3d)
-            try:
-                ax3d.dist = st.session_state.dist_3d / 10
-            except:
-                pass
-            fig3d.colorbar(surf, ax=ax3d, shrink=0.5, aspect=5)
-            
-            # Ausgabe
-            ax3d.plot_surface(X_plot, Y_plot, Z_plot_vals, cmap='viridis', alpha=0.8)
-            ax3d.set_title(f"3D: {st.session_state.ausgewählte_funktion}")
-            st.pyplot(fig3d)
-            plt.close(fig3d)
+                # Z-Werte berechnen und auf Z-Grenzen clippen
+                zs = []
+                for x, y in zip(xs, ys):
+                    try:
+                        val = current_func(np.array([x, y]))['value']
+                        val_clipped = np.clip(val, z_min, z_max)
+                        zs.append(val_clipped)
+                    except:
+                        zs.append(np.nan)
+
+                ax3d.plot(xs, ys, zs, marker='o', linewidth=1, markersize=3,
+                          alpha=0.6, label=f'Pfad {idx+1}')
+
+            # Falls du weiterhin Deine Oberfläche plus Factory‑Aufruf verwenden willst,
+            # entferne den alten paths_dict-Parameter oder setze ihn auf None:
+            vs.plot_3d_surface_and_paths(
+                fig3d, ax3d, current_func_obj,
+                p1_range=x_range, p2_range=y_range,
+                title=f"3D: {st.session_state.ausgewählte_funktion}",
+                view=(st.session_state.elev_3d, st.session_state.azim_3d)
+                # paths_dict entfällt hier, da wir direkt in Matplotlib gezeichnet haben
+            )
+
+                    # Kamera & Colorbar
+                    ax3d.view_init(elev=st.session_state.elev_3d, azim=st.session_state.azim_3d)
+                    try:
+                        ax3d.dist = st.session_state.dist_3d / 10
+                    except:
+                        pass
+                    fig3d.colorbar(surf, ax=ax3d, shrink=0.5, aspect=5)
+
+                    # Ausgabe
+                    ax3d.plot_surface(X_plot, Y_plot, Z_plot_vals, cmap='viridis', alpha=0.8)
+                    ax3d.set_title(f"3D: {st.session_state.ausgewählte_funktion}")
+                    st.pyplot(fig3d)
+                    plt.close(fig3d)
     
     with col2:
         # Erstelle 2D-Konturplot mit matplotlib und füge Kontrollen hinzu
