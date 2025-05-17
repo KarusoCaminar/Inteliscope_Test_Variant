@@ -417,63 +417,13 @@ with col1:
             ax3d.set_ylabel('Y')
             ax3d.set_zlabel('Funktionswert')
             ax3d.set_title(f"3D-Oberfläche: {st.session_state.ausgewählte_funktion}")
-            
-    #Optimierungsvisualisierung
-    with tabs[0]:
-        # Hole die aktuelle Funktion
-        current_func_obj = None
-        if st.session_state.ausgewählte_funktion in pf.MATH_FUNCTIONS_LIB:
-            current_func_info = pf.MATH_FUNCTIONS_LIB[st.session_state.ausgewählte_funktion]
-            current_func_obj = current_func_info["func"]
-            x_range = current_func_info["default_range"][0]
-            y_range = current_func_info["default_range"][1]
-            contour_levels = current_func_info.get("contour_levels", 40)
-
-        # Zeige Tooltip für die Funktion, falls vorhanden
-        # Evaluate once to get metadata like tooltip and minima
-        # Use a standard point, ensure it's within typical bounds or handle potential errors
-        try:
-            eval_point_for_meta = np.array([(x_range[0]+x_range[1])/2, (y_range[0]+y_range[1])/2])
-            if current_func_info.get("dimensions", 2) == 1: # Handle 1D if ever introduced
-                    eval_point_for_meta = np.array([(x_range[0]+x_range[1])/2])
-
-            func_meta_result = current_func_obj(eval_point_for_meta)
-            if "tooltip" in func_meta_result:
-                with st.expander("ℹ️ Über diese Funktion", expanded=False):
-                    st.markdown(func_meta_result["tooltip"])
-            minima = func_meta_result.get("minima", None)
-        except Exception as e:
-            st.warning(f"Konnte Metadaten für {st.session_state.ausgewählte_funktion} nicht laden: {e}")
-            minima = None
-
-        # Berechne bekannte Minima, falls vorhanden
-        minima = func_result.get("minima", None)
-
-        elif st.session_state.ausgewählte_funktion in st.session_state.custom_funcs:
-            current_func_obj = st.session_state.custom_funcs[st.session_state.ausgewählte_funktion]
-            # Verwende Standardbereiche für benutzerdefinierte Funktionen oder store them
-            func_meta_result = current_func_obj(np.array([0.0,0.0])) # Test eval
-            x_range = func_meta_result.get("x_range", (-5,5)) # Get from custom func if stored
-            y_range = func_meta_result.get("y_range", (-5,5))
-            contour_levels = 30
-            minima = None # Custom functions don't have predefined minima typically
-        else:
-            st.error("Die ausgewählte Funktion wurde nicht gefunden.")
-            current_func_obj = None
-            x_range = (-5, 5)
-            y_range = (-5, 5)
-            contour_levels = 30
-            minima = None
-
-        # Layout für die Visualisierung
-        col1, col2 = st.columns([1, 1])
 
         with col1:
             # Bekannte Minima
             if minima:
                 for m in minima:
                     try:
-                        zv = current_func(np.array(m))['value']
+                        zv = current_func_obj(np.array(m))['value']
                         ax3d.scatter(m[0], m[1], zv, color='red', marker='+', s=120)
                     except:
                         pass
@@ -507,7 +457,7 @@ with col1:
                 zs = []
                 for x, y in zip(xs, ys):
                     try:
-                        val = current_func(np.array([x, y]))['value']
+                        val = current_func_obj(np.array([x, y]))['value']
                         val_clipped = np.clip(val, z_min, z_max)
                         zs.append(val_clipped)
                     except:
@@ -542,7 +492,7 @@ with col1:
     
     with col2:
         # Erstelle 2D-Konturplot mit matplotlib und füge Kontrollen hinzu
-        if current_func:
+        if current_func_obj:
             # Erstelle Container für 2D Plot und Kontrollen
             plot2d_container = st.container()
             controls2d_container = st.container()
@@ -608,7 +558,7 @@ with col1:
                     for j in range(X.shape[1]):
                         try:
                             params = np.array([X[i, j], Y[i, j]])
-                            result = current_func(params)
+                            result = current_func_obj(params)
                             Z[i, j] = result['value']
                         except:
                             Z[i, j] = np.nan
@@ -655,7 +605,7 @@ selected_optimizer = io.OPTIMIZERS[selected_algorithm_key]
 
 # Optimierung starten
 result = selected_optimizer(
-    func=current_func,
+    func=current_func_obj,
     x0=start_point,
     callback=visualization_callback,
     **optimizer_params
@@ -860,7 +810,7 @@ status = result.status              # Status-String
     results_container = st.container()
     
     # Führe Optimierung aus, wenn der Button geklickt wurde
-    if start_optimization and current_func:
+    if start_optimization and current_func_obj:
         with st.spinner("Optimierung läuft..."):
             # Räume die Live-Tracking-Container auf
             live_tracking_container.empty()
@@ -885,7 +835,7 @@ status = result.status              # Status-String
             
             # Erstelle Callback-Funktion
             visualization_callback, path_history, value_history = create_visualization_tracker(
-                current_func, x_range, y_range
+                current_func_obj, x_range, y_range
             )
             
             # Wähle Startpunkt mit hohem Funktionswert
@@ -971,7 +921,7 @@ status = result.status              # Status-String
 
     # Optimierung starten
     result = optimizer_fn(
-        func=current_func,
+        func=current_func_obj,
         x0=start_point,
         callback=visualization_callback,
         **optimizer_params
@@ -1022,7 +972,7 @@ status            = result.status
                         for i in range(X.shape[0]):
                             for j in range(X.shape[1]):
                                 try:
-                                    result = current_func(np.array([X[i, j], Y[i, j]]))
+                                    result = current_func_obj(np.array([X[i, j], Y[i, j]]))
                                     Z[i, j] = result.get('value', np.nan)
                                 except:
                                     Z[i, j] = np.nan
@@ -1182,7 +1132,7 @@ status            = result.status
                         for j in range(X.shape[1]):
                             try:
                                 params = np.array([X[i, j], Y[i, j]])
-                                result = current_func(params)
+                                result = current_func_obj(params)
                                 Z[i, j] = result.get('value', np.nan)
                             except:
                                 Z[i, j] = np.nan
@@ -1218,7 +1168,7 @@ status            = result.status
                         for i, point in enumerate(best_history):
                             try:
                                 params = np.array(point)
-                                result = current_func(params)
+                                result = current_func_obj(params)
                                 path_z[i] = result.get('value', np.nan)
                                 
                                 # Begrenze extreme Z-Werte
@@ -1248,7 +1198,7 @@ status            = result.status
                         for i, m in enumerate(minima):
                             try:
                                 params = np.array(m)
-                                result = current_func(params)
+                                result = current_func_obj(params)
                                 z_val = result.get('value', np.nan)
                                 if np.isfinite(z_val):
                                     ax3d_result.scatter([m[0]], [m[1]], [z_val], 
@@ -1280,7 +1230,7 @@ status            = result.status
                     plt.close(fig3d_result)
     
     # Zeige gespeicherte Ergebnisse
-    elif current_func and st.session_state.optimierungsergebnisse:
+    elif current_func_obj and st.session_state.optimierungsergebnisse:
         # Filtere Ergebnisse für die aktuelle Funktion
         current_function_results = {
             algo: result for algo, result in st.session_state.optimierungsergebnisse.items()
@@ -1317,7 +1267,7 @@ status            = result.status
                                 for j in range(X.shape[1]):
                                     try:
                                         params = np.array([X[i, j], Y[i, j]])
-                                        result = current_func(params)
+                                        result = current_func_obj(params)
                                         Z[i, j] = result.get('value', np.nan)
                                     except:
                                         Z[i, j] = np.nan
@@ -1493,7 +1443,7 @@ status            = result.status
                             for j in range(X.shape[1]):
                                 try:
                                     params = np.array([X[i, j], Y[i, j]])
-                                    result = current_func(params)
+                                    result = current_func_obj(params)
                                     Z[i, j] = result.get('value', np.nan)
                                 except:
                                     Z[i, j] = np.nan
@@ -1531,7 +1481,7 @@ status            = result.status
                             for i, point in enumerate(result_data["history"]):
                                 try:
                                     params = np.array(point)
-                                    res = current_func(params)
+                                    res = current_func_obj(params)
                                     path_z[i] = res.get('value', np.nan)
                                     
                                     # Begrenze extreme Z-Werte falls statistisch verarbeitet
@@ -1557,7 +1507,7 @@ status            = result.status
                             for i, m in enumerate(minima):
                                 try:
                                     params = np.array(m)
-                                    res = current_func(params)
+                                    res = current_func_obj(params)
                                     z_val = res.get('value', np.nan)
                                     if np.isfinite(z_val):
                                         ax3d_prev.scatter([m[0]], [m[1]], [z_val], 
@@ -1845,48 +1795,49 @@ with tabs[2]:
                     
                     st.dataframe(result_data)
                 
-                # Zeige die Pfade aller ausgewählten Algorithmen in einem Plot
-                if selected_function_for_comparison in pf.MATH_FUNCTIONS_LIB:
-                    current_func_info = pf.MATH_FUNCTIONS_LIB[selected_function_for_comparison]
-                    current_func = current_func_info["func"]
-                    x_range = current_func_info["default_range"][0]
-                    y_range = current_func_info["default_range"][1]
-                    contour_levels = current_func_info.get("contour_levels", 40)
-                    
-                    # Hole Minima, falls vorhanden
-                    func_result = current_func(np.array([0, 0]))
-                    minima = func_result.get("minima", None)
-                    
-                elif selected_function_for_comparison in st.session_state.custom_funcs:
-                    current_func = st.session_state.custom_funcs[selected_function_for_comparison]
-                    x_range = (-5, 5)
-                    y_range = (-5, 5)
-                    contour_levels = 30
-                    minima = None
-                else:
-                    st.error("Die ausgewählte Funktion wurde nicht gefunden.")
-                    current_func = None
-                
-                if current_func:
-                    # Erstelle Figur und Achsen
-                    fig, ax = plt.subplots(figsize=(10, 8))
-                    
-                    # Erzeuge Mesh-Daten (direkte Implementierung)
-                    n_points = 100  # Anzahl der Punkte pro Dimension
-                    x = np.linspace(x_range[0], x_range[1], n_points)
-                    y = np.linspace(y_range[0], y_range[1], n_points)
-                    X_mesh, Y_mesh = np.meshgrid(x, y)
-                    Z_mesh = np.zeros_like(X_mesh)
-                    
-                    # Berechne Funktionswerte auf dem Gitter
-                    for i in range(X_mesh.shape[0]):
-                        for j in range(X_mesh.shape[1]):
-                            try:
-                                params = np.array([X_mesh[i, j], Y_mesh[i, j]])
-                                result = current_func(params)
-                                Z_mesh[i, j] = result.get('value', np.nan)
-                            except:
-                                Z_mesh[i, j] = np.nan
+# Zeige die Pfade aller ausgewählten Algorithmen in einem Plot
+if selected_function_for_comparison in pf.MATH_FUNCTIONS_LIB:
+    func_info = pf.MATH_FUNCTIONS_LIB[selected_function_for_comparison]
+    current_func_obj = func_info["func"]
+    x_range = func_info["default_range"][0]
+    y_range = func_info["default_range"][1]
+    contour_levels = func_info.get("contour_levels", 40)
+    try:
+        func_meta = current_func_obj(np.array([0, 0]))
+        minima = func_meta.get("minima", None)
+    except Exception:
+        minima = None
+
+elif selected_function_for_comparison in st.session_state.custom_funcs:
+    current_func_obj = st.session_state.custom_funcs[selected_function_for_comparison]
+    x_range = (-5, 5)
+    y_range = (-5, 5)
+    contour_levels = 30
+    minima = None
+else:
+    st.error("Die ausgewählte Funktion wurde nicht gefunden.")
+    current_func_obj = None
+
+if current_func_obj:
+    # Erstelle Figur und Achsen
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    # Erzeuge Mesh-Daten (direkte Implementierung)
+    n_points = 100  # Anzahl der Punkte pro Dimension
+    x = np.linspace(x_range[0], x_range[1], n_points)
+    y = np.linspace(y_range[0], y_range[1], n_points)
+    X_mesh, Y_mesh = np.meshgrid(x, y)
+    Z_mesh = np.zeros_like(X_mesh)
+
+    # Berechne Funktionswerte auf dem Gitter
+    for i in range(X_mesh.shape[0]):
+        for j in range(X_mesh.shape[1]):
+            try:
+                params = np.array([X_mesh[i, j], Y_mesh[i, j]])
+                result = current_func_obj(params)
+                Z_mesh[i, j] = result.get('value', np.nan)
+            except:
+                Z_mesh[i, j] = np.nan
                     
                     # Statistische Verarbeitung für bessere Visualisierung
                     Z_finite = Z_mesh[np.isfinite(Z_mesh)]
@@ -1964,7 +1915,7 @@ with tabs[2]:
                         for j in range(X_mesh.shape[1]):
                             try:
                                 params = np.array([X_mesh[i, j], Y_mesh[i, j]])
-                                result = current_func(params)
+                                result = current_func_obj(params)
                                 Z_mesh[i, j] = result.get('value', np.nan)
                             except:
                                 Z_mesh[i, j] = np.nan
@@ -2003,7 +1954,7 @@ with tabs[2]:
                             path_z = []
                             for p in path:
                                 try:
-                                    result = current_func(p)
+                                    result = current_func_obj(p)
                                     if 'value' in result and np.isfinite(result['value']):
                                         path_z.append(result['value'])
                                     else:
@@ -2027,7 +1978,7 @@ with tabs[2]:
                         min_z = []
                         for m in minima:
                             try:
-                                z = current_func(np.array(m))['value']
+                                z = current_func_obj(np.array(m))['value']
                                 min_z.append(z)
                             except:
                                 min_z.append(None)
