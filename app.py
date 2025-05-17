@@ -388,13 +388,6 @@ with col1:
             y = np.linspace(y_range[0], y_range[1], 50)
             X, Y = np.meshgrid(x, y)
             Z = np.zeros_like(X)
-            for i in range(X.shape[0]):
-                for j in range(X.shape[1]):
-                    try:
-                        params = np.array([X[i, j], Y[i, j]])
-                        Z[i, j] = current_func(params)['value']
-                    except:
-                        Z[i, j] = np.nan
             
             # Clipping für bessere Optik
             Z_finite = Z[np.isfinite(Z)]
