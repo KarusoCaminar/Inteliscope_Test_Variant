@@ -1839,176 +1839,178 @@ if current_func_obj:
             except:
                 Z_mesh[i, j] = np.nan
                     
-                    # Statistische Verarbeitung für bessere Visualisierung
-                    Z_finite = Z_mesh[np.isfinite(Z_mesh)]
-                    if len(Z_finite) > 0:
-                        z_mean = np.mean(Z_finite)
-                        z_std = np.std(Z_finite)
-                        z_min = max(np.min(Z_finite), z_mean - 5*z_std)
-                        z_max = min(np.max(Z_finite), z_mean + 5*z_std)
+    # Statistische Verarbeitung für bessere Visualisierung
+    Z_finite = Z_mesh[np.isfinite(Z_mesh)]
+    if len(Z_finite) > 0:
+        z_mean = np.mean(Z_finite)
+        z_std = np.std(Z_finite)
+        z_min = max(np.min(Z_finite), z_mean - 5*z_std)
+        z_max = min(np.max(Z_finite), z_mean + 5*z_std)
                         
-                        # Extreme Werte begrenzen
-                        Z_mesh_mod = np.copy(Z_mesh)
-                        Z_mesh_mod[(Z_mesh_mod < z_min) & np.isfinite(Z_mesh_mod)] = z_min
-                        Z_mesh_mod[(Z_mesh_mod > z_max) & np.isfinite(Z_mesh_mod)] = z_max
-                        Z_mesh = Z_mesh_mod
+    # Extreme Werte begrenzen
+    Z_mesh_mod = np.copy(Z_mesh)
+    Z_mesh_mod[(Z_mesh_mod < z_min) & np.isfinite(Z_mesh_mod)] = z_min
+    Z_mesh_mod[(Z_mesh_mod > z_max) & np.isfinite(Z_mesh_mod)] = z_max
+    Z_mesh = Z_mesh_mod
+
+    # Zeichne Konturplot
+    contour = ax.contourf(X_mesh, Y_mesh, Z_mesh, contour_levels, cmap='viridis', alpha=0.8)
                     
-                    # Zeichne Konturplot
-                    contour = ax.contourf(X_mesh, Y_mesh, Z_mesh, contour_levels, cmap='viridis', alpha=0.8)
+    # Füge Farbbalken hinzu
+    cbar = fig.colorbar(contour, ax=ax)
+    cbar.set_label('Funktionswert')
                     
-                    # Füge Farbbalken hinzu
-                    cbar = fig.colorbar(contour, ax=ax)
-                    cbar.set_label('Funktionswert')
-                    
-                    # Zeichne Pfade für jeden Algorithmus
-                    colors = ['red', 'blue', 'green', 'purple', 'orange', 'brown', 'pink', 'gray']
-                    
-                    for i, algo in enumerate(selected_algos):
-                        result = st.session_state.optimierungsergebnisse[algo]
-                        path = result.get("history", [])
-                        
-                        if path:
-                            path_x = [p[0] for p in path]
-                            path_y = [p[1] for p in path]
-                            ax.plot(path_x, path_y, '-o', color=colors[i % len(colors)], linewidth=2, markersize=4, label=algo)
-                            
-                            # Markiere Endpunkt
-                            ax.plot(path_x[-1], path_y[-1], '*', color=colors[i % len(colors)], markersize=10)
-                    
-                    # Zeichne bekannte Minima, falls vorhanden
-                    if minima:
-                        for minimum in minima:
-                            ax.plot(minimum[0], minimum[1], 'X', color='white', markersize=8, markeredgecolor='black')
-                    
-                    # Füge Titel hinzu
-                    ax.set_title(f"Vergleich der Optimierungspfade: {selected_function_for_comparison}")
-                    
-                    # Achsenbeschriftungen
-                    ax.set_xlabel('X')
-                    ax.set_ylabel('Y')
-                    
-                    # Zeige Legende
-                    ax.legend()
-                    
-                    # Setze Achsengrenzen
-                    ax.set_xlim(x_range)
-                    ax.set_ylim(y_range)
-                    
-                    st.pyplot(fig)
-                    plt.close(fig)
-                    
-                    # 3D-Vergleich
-                    st.markdown("### 3D-Vergleich der Optimierungspfade")
-                    
-                    # Erstelle 3D-Plot mit Plotly
-                    fig3d = go.Figure()
-                    
-                    # Füge Oberfläche hinzu (direkte Implementierung)
-                    n_points = 50  # Reduzierte Auflösung für bessere Performance im 3D-Plot
-                    x = np.linspace(x_range[0], x_range[1], n_points)
-                    y = np.linspace(y_range[0], y_range[1], n_points)
-                    X_mesh, Y_mesh = np.meshgrid(x, y)
-                    Z_mesh = np.zeros_like(X_mesh)
-                    
-                    # Berechne Funktionswerte auf dem Gitter
-                    for i in range(X_mesh.shape[0]):
-                        for j in range(X_mesh.shape[1]):
-                            try:
-                                params = np.array([X_mesh[i, j], Y_mesh[i, j]])
-                                result = current_func_obj(params)
-                                Z_mesh[i, j] = result.get('value', np.nan)
-                            except:
-                                Z_mesh[i, j] = np.nan
-                    
-                    # Statistische Verarbeitung für bessere Visualisierung
-                    Z_finite = Z_mesh[np.isfinite(Z_mesh)]
-                    if len(Z_finite) > 0:
-                        z_mean = np.mean(Z_finite)
-                        z_std = np.std(Z_finite)
-                        
-                        # Begrenze extreme Werte für bessere Visualisierung
-                        lower_bound = max(np.min(Z_finite), z_mean - 5*z_std)
-                        upper_bound = min(np.max(Z_finite), z_mean + 5*z_std)
-                        
-                        Z_mesh_mod = np.copy(Z_mesh)
-                        Z_mesh_mod[(Z_mesh_mod < lower_bound) & np.isfinite(Z_mesh_mod)] = lower_bound
-                        Z_mesh_mod[(Z_mesh_mod > upper_bound) & np.isfinite(Z_mesh_mod)] = upper_bound
-                        Z_mesh = Z_mesh_mod
-                    fig3d.add_trace(go.Surface(
-                        x=X_mesh, y=Y_mesh, z=Z_mesh,
-                        colorscale='viridis',
-                        opacity=0.8,
-                        showscale=True
-                    ))
-                    
-                    # Füge Pfade hinzu
-                    for i, algo in enumerate(selected_algos):
-                        result = st.session_state.optimierungsergebnisse[algo]
-                        path = result.get("history", [])
-                        
-                        if path:
-                            path_x = [p[0] for p in path]
-                            path_y = [p[1] for p in path]
-                            
-                            # Berechne z-Werte für den Pfad
-                            path_z = []
-                            for p in path:
-                                try:
-                                    result = current_func_obj(p)
-                                    if 'value' in result and np.isfinite(result['value']):
-                                        path_z.append(result['value'])
-                                    else:
-                                        path_z.append(None)
-                                except:
-                                    path_z.append(None)
-                            
-                            # Zeichne Pfad
-                            fig3d.add_trace(go.Scatter3d(
-                                x=path_x, y=path_y, z=path_z,
-                                mode='lines+markers',
-                                line=dict(color=colors[i % len(colors)], width=5),
-                                marker=dict(size=4, color=colors[i % len(colors)]),
-                                name=algo
-                            ))
-                    
-                    # Füge bekannte Minima hinzu, falls vorhanden
-                    if minima:
-                        min_x = [m[0] for m in minima]
-                        min_y = [m[1] for m in minima]
-                        min_z = []
-                        for m in minima:
-                            try:
-                                z = current_func_obj(np.array(m))['value']
-                                min_z.append(z)
-                            except:
-                                min_z.append(None)
-                        
-                        fig3d.add_trace(go.Scatter3d(
-                            x=min_x, y=min_y, z=min_z,
-                            mode='markers',
-                            marker=dict(size=8, color='white', symbol='x', line=dict(color='black', width=2)),
-                            name='Bekannte Minima'
-                        ))
-                    
-                    # Layout-Konfiguration
-                    fig3d.update_layout(
-                        title=f"3D-Vergleich: {selected_function_for_comparison}",
-                        scene=dict(
-                            xaxis_title='X',
-                            yaxis_title='Y',
-                            zaxis_title='Funktionswert',
-                            aspectratio=dict(x=1, y=1, z=0.8)
-                        ),
-                        margin=dict(l=0, r=0, b=0, t=30),
-                        legend=dict(
-                            x=0.02,
-                            y=0.98,
-                            bordercolor="Black",
-                            borderwidth=1
-                        )
-                    )
-                    
-                    st.plotly_chart(fig3d, use_container_width=True, height=600)
+# Zeichne Pfade für jeden Algorithmus
+colors = ['red', 'blue', 'green', 'purple', 'orange', 'brown', 'pink', 'gray']
+
+for i, algo in enumerate(selected_algos):
+    result = st.session_state.optimierungsergebnisse[algo]
+    path = result.get("history", [])
+
+    if path:
+        path_x = [p[0] for p in path]
+        path_y = [p[1] for p in path]
+        ax.plot(path_x, path_y, '-o', color=colors[i % len(colors)], linewidth=2, markersize=4, label=algo)
+
+        # Markiere Endpunkt
+        ax.plot(path_x[-1], path_y[-1], '*', color=colors[i % len(colors)], markersize=10)
+
+# Zeichne bekannte Minima, falls vorhanden
+if minima:
+    for minimum in minima:
+        ax.plot(minimum[0], minimum[1], 'X', color='white', markersize=8, markeredgecolor='black')
+
+# Füge Titel hinzu
+ax.set_title(f"Vergleich der Optimierungspfade: {selected_function_for_comparison}")
+
+# Achsenbeschriftungen
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+
+# Zeige Legende
+ax.legend()
+
+# Setze Achsengrenzen
+ax.set_xlim(x_range)
+ax.set_ylim(y_range)
+
+st.pyplot(fig)
+plt.close(fig)
+
+# 3D-Vergleich
+st.markdown("### 3D-Vergleich der Optimierungspfade")
+
+# Erstelle 3D-Plot mit Plotly
+fig3d = go.Figure()
+
+# Füge Oberfläche hinzu (direkte Implementierung)
+n_points = 50  # Reduzierte Auflösung für bessere Performance im 3D-Plot
+x = np.linspace(x_range[0], x_range[1], n_points)
+y = np.linspace(y_range[0], y_range[1], n_points)
+X_mesh, Y_mesh = np.meshgrid(x, y)
+Z_mesh = np.zeros_like(X_mesh)
+
+# Berechne Funktionswerte auf dem Gitter
+for i in range(X_mesh.shape[0]):
+    for j in range(X_mesh.shape[1]):
+        try:
+            params = np.array([X_mesh[i, j], Y_mesh[i, j]])
+            result = current_func_obj(params)
+            Z_mesh[i, j] = result.get('value', np.nan)
+        except:
+            Z_mesh[i, j] = np.nan
+
+# Statistische Verarbeitung für bessere Visualisierung
+Z_finite = Z_mesh[np.isfinite(Z_mesh)]
+if len(Z_finite) > 0:
+    z_mean = np.mean(Z_finite)
+    z_std = np.std(Z_finite)
+
+    # Begrenze extreme Werte für bessere Visualisierung
+    lower_bound = max(np.min(Z_finite), z_mean - 5*z_std)
+    upper_bound = min(np.max(Z_finite), z_mean + 5*z_std)
+
+    Z_mesh_mod = np.copy(Z_mesh)
+    Z_mesh_mod[(Z_mesh_mod < lower_bound) & np.isfinite(Z_mesh_mod)] = lower_bound
+    Z_mesh_mod[(Z_mesh_mod > upper_bound) & np.isfinite(Z_mesh_mod)] = upper_bound
+    Z_mesh = Z_mesh_mod
+
+fig3d.add_trace(go.Surface(
+    x=X_mesh, y=Y_mesh, z=Z_mesh,
+    colorscale='viridis',
+    opacity=0.8,
+    showscale=True
+))
+
+# Füge Pfade hinzu
+for i, algo in enumerate(selected_algos):
+    result = st.session_state.optimierungsergebnisse[algo]
+    path = result.get("history", [])
+
+    if path:
+        path_x = [p[0] for p in path]
+        path_y = [p[1] for p in path]
+
+        # Berechne z-Werte für den Pfad
+        path_z = []
+        for p in path:
+            try:
+                result = current_func_obj(p)
+                if 'value' in result and np.isfinite(result['value']):
+                    path_z.append(result['value'])
+                else:
+                    path_z.append(None)
+            except:
+                path_z.append(None)
+
+        # Zeichne Pfad
+        fig3d.add_trace(go.Scatter3d(
+            x=path_x, y=path_y, z=path_z,
+            mode='lines+markers',
+            line=dict(color=colors[i % len(colors)], width=5),
+            marker=dict(size=4, color=colors[i % len(colors)]),
+            name=algo
+        ))
+
+# Füge bekannte Minima hinzu, falls vorhanden
+if minima:
+    min_x = [m[0] for m in minima]
+    min_y = [m[1] for m in minima]
+    min_z = []
+    for m in minima:
+        try:
+            z = current_func_obj(np.array(m))['value']
+            min_z.append(z)
+        except:
+            min_z.append(None)
+
+    fig3d.add_trace(go.Scatter3d(
+        x=min_x, y=min_y, z=min_z,
+        mode='markers',
+        marker=dict(size=8, color='white', symbol='x', line=dict(color='black', width=2)),
+        name='Bekannte Minima'
+    ))
+
+# Layout-Konfiguration
+fig3d.update_layout(
+    title=f"3D-Vergleich: {selected_function_for_comparison}",
+    scene=dict(
+        xaxis_title='X',
+        yaxis_title='Y',
+        zaxis_title='Funktionswert',
+        aspectratio=dict(x=1, y=1, z=0.8)
+    ),
+    margin=dict(l=0, r=0, b=0, t=30),
+    legend=dict(
+        x=0.02,
+        y=0.98,
+        bordercolor="Black",
+        borderwidth=1
+    )
+)
+
+st.plotly_chart(fig3d, use_container_width=True, height=600)
+
 
 with tabs[3]: # Info & Hilfe
     st.header("Info & Hilfe")
