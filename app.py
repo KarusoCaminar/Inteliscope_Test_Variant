@@ -310,8 +310,9 @@ if st.button("Alle Ergebnisse zurücksetzen", use_container_width=True):
 
 # Hauptbereich für Visualisierung
 # Tabs für verschiedene Visualisierungen und Interaktionen
-tabs = st.tabs(["Optimierungsvisualisierung", "Funktionseditor", "Ergebnisvergleich"])
+tabs = st.tabs(["Optimierungsvisualisierung", "Funktionseditor", "Ergebnisvergleich", "Info & Hilfe"])
 
+#Optimierungsvisualisierung
 with tabs[0]:
     # Hole die aktuelle Funktion
     current_func_obj = None 
@@ -410,6 +411,17 @@ with col1:
         with plot3d_container:
             fig3d = plt.figure(figsize=(8, 6))
             ax3d = fig3d.add_subplot(111, projection='3d')
+            x_plot = np.linspace(x_range[0], x_range[1], 50)
+            y_plot = np.linspace(y_range[0], y_range[1], 50)
+            X_plot, Y_plot = np.meshgrid(x_plot, y_plot)
+            Z_plot_vals = np.zeros_like(X_plot)
+            for i_plot in range(X_plot.shape[0]):
+                for j_plot in range(X_plot.shape[1]):
+                    try:
+                        Z_plot_vals[i_plot, j_plot] = current_func_obj(np.array([X_plot[i_plot, j_plot], Y_plot[i_plot, j_plot]]))['value']
+                    except: Z_plot_vals[i_plot, j_plot] = np.nan
+            # ... (Rest deiner 3D Plot Logik, Clipping, Path etc.) ...
+
             
             # Oberfläche berechnen
             x = np.linspace(x_range[0], x_range[1], 50)
@@ -509,9 +521,10 @@ vs.plot_3d_surface_and_paths(
             fig3d.colorbar(surf, ax=ax3d, shrink=0.5, aspect=5)
             
             # Ausgabe
+            ax3d.plot_surface(X_plot, Y_plot, Z_plot_vals, cmap='viridis', alpha=0.8)
+            ax3d.set_title(f"3D: {st.session_state.ausgewählte_funktion}")
             st.pyplot(fig3d)
             plt.close(fig3d)
-
     
     with col2:
         # Erstelle 2D-Konturplot mit matplotlib und füge Kontrollen hinzu
@@ -620,10 +633,6 @@ vs.plot_3d_surface_and_paths(
                 st.pyplot(fig2d)
                 plt.close(fig2d)
     
-    # Funktionen für die Optimierung direkt implementieren
-    def run_simple_optimization(func, start_point, max_iter=500, learning_rate=0.01, 
-                            epsilon=1e-8, momentum=0.9, use_momentum=False, 
-                            use_adaptive_lr=True, callback=None):
         """
         Verbesserte Gradient Descent Implementierung für die Optimierung
         
@@ -736,7 +745,9 @@ vs.plot_3d_surface_and_paths(
         
         return x, x_history, loss_history, f"Max. Iterationen erreicht ({max_iter})"
     
-    def create_visualization_tracker(func, x_range, y_range):
+    def create_visualization_tracker(func, x_range, y_range, contour_levels, minima):
+    path_history = []
+    value_history = []
         """
         Erstellt einen Tracker für den Optimierungspfad
         """
@@ -2002,3 +2013,60 @@ with tabs[2]:
                     )
                     
                     st.plotly_chart(fig3d, use_container_width=True, height=600)
+
+with tabs[3]: # Info & Hilfe
+    st.header("Info & Hilfe")
+    st.markdown("""
+    ### Über IntelliScope Explorer
+    
+    Inteliscope Explorer ist ein interaktives Tool zur Erkundung von Optimierungsfunktionen und -algorithmen.
+    Es ermöglicht Ihnen, verschiedene Algorithmen auf unterschiedlichen Testfunktionen zu visualisieren
+    und deren Verhalten sowie Konvergenzeigenschaften zu analysieren.
+    
+    ### Kernfunktionen
+    
+    - **Testfunktionen**: Eine Bibliothek vordefinierter mathematischer Funktionen (z.B. Rosenbrock, Rastrigin) mit bekannten Eigenschaften und Herausforderungen für Optimierer.
+    - **Benutzerdefinierte Funktionen**: Erstellen und visualisieren Sie eigene 2D-Funktionen direkt im Tool.
+    - **Optimierungsalgorithmen**: Implementierungen gängiger Gradientenabstiegsverfahren:
+        - **Gradient Descent mit Liniensuche**: Findet iterativ eine optimale Schrittweite.
+        - **Gradient Descent mit Momentum**: Beschleunigt die Konvergenz durch Berücksichtigung vergangener Schritte.
+        - **Adam Optimizer**: Kombiniert adaptive Lernraten mit Momentum für robuste Leistung.
+    - **Visualisierungen**:
+        - **3D-Oberflächenplots**: Darstellung der Funktionslandschaft.
+        - **2D-Konturplots**: Visualisierung der Höhenlinien und Optimierungspfade.
+        - **Live-Tracking**: Verfolgen Sie den Optimierungsprozess in Echtzeit.
+        - **Konvergenzplots**: Zeigen den Verlauf des Funktionswertes über die Iterationen.
+    - **Ergebnisvergleich**: Vergleichen Sie die Leistung und Pfade verschiedener Algorithmen auf derselben Funktion.
+    - **Interaktive Steuerung**: Passen Sie Algorithmusparameter, Startpunkte und Visualisierungsdetails an.
+    
+    ### Wie funktioniert es?
+    
+    1.  **Funktion auswählen**: Wählen Sie eine Standardfunktion oder erstellen Sie eine eigene im Funktionseditor.
+    2.  **Algorithmus wählen**: Entscheiden Sie sich für einen Optimierungsalgorithmus.
+    3.  **Parameter anpassen**: Justieren Sie Parameter wie Lernrate, maximale Iterationen etc.
+    4.  **Optimierung starten**: Beobachten Sie den Algorithmus bei der Arbeit.
+    5.  **Ergebnisse analysieren**: Untersuchen Sie die Plots und Metriken, um das Verhalten des Algorithmus zu verstehen.
+    
+    ### Testfunktionen im Detail
+    
+    -   **Rosenbrock**: $f(x,y) = (a-x)^2 + b(y-x^2)^2$. Klassisch schwierig, mit einem langen, schmalen, gekrümmten Tal. Globales Minimum bei $(a, a^2)$.
+    -   **Himmelblau**: $f(x,y) = (x^2+y-11)^2 + (x+y^2-7)^2$. Hat vier identische lokale Minima.
+    -   **Rastrigin**: $f(x) = An + \sum_{i=1}^{n} [x_i^2 - A \cos(2\pi x_i)]$. Hochgradig multimodal mit vielen lokalen Minima. Globales Minimum bei $x_i=0$.
+    -   **Ackley**: $f(x) = -a \exp(-b \sqrt{\frac{1}{n}\sum x_i^2}) - \exp(\frac{1}{n}\sum \cos(cx_i)) + a + \exp(1)$. Viele lokale Minima, globales Minimum bei $x_i=0$.
+    -   **Schwefel**: $f(x) = 418.9829n - \sum x_i \sin(\sqrt{|x_i|})$. Viele lokale Minima, das globale Minimum ist weit von den nächstbesten entfernt.
+    -   **Eggcrate**: $f(x,y) = x^2 + y^2 + 25(\sin^2(x) + \sin^2(y))$. Einfacheres Beispiel mit vielen regelmäßigen lokalen Minima.
+        
+    ### Tipps zur Nutzung
+    
+    -   Beginnen Sie mit einfacheren Funktionen (z.B. Eggcrate oder eine eigene quadratische Funktion), um ein Gefühl für die Algorithmen zu bekommen.
+    -   Experimentieren Sie mit den Parametern der Algorithmen. Eine zu hohe Lernrate kann zur Divergenz führen, eine zu niedrige zu langsamer Konvergenz.
+    -   Nutzen Sie die Visualisierungen, um zu verstehen, wie sich die Algorithmen in verschiedenen Regionen der Funktionslandschaft verhalten.
+    -   Vergleichen Sie die Ergebnisse verschiedener Algorithmen auf derselben Funktion, um deren Stärken und Schwächen zu erkennen.
+    
+    Viel Spaß beim Erkunden der faszinierenden Welt der Optimierung!
+    """)
+
+# Der Footer bleibt danach unverändert am Ende der Datei:
+st.markdown("---")
+st.markdown("© 2024-2025 IntelliScope Explorer")
+
