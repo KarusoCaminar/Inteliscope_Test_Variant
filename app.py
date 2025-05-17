@@ -727,7 +727,7 @@ with col1:
             if current_lr < min_lr:
                 return x, x_history, loss_history, f"Minimale Lernrate erreicht ({min_lr})"
 
-        return x, x_history, loss_history, f"Max. Iterationen erreicht ({max_iter})"
+            return x, x_history, loss_history, f"Max. Iterationen erreicht ({max_iter})"
     
     def create_visualization_tracker(func, x_range, y_range, contour_levels, minima):
         """
