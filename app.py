@@ -457,11 +457,11 @@ with col1:
                 zs = []
                 for x, y in zip(xs, ys):
                     try:
-                    val = current_func_obj(np.array([x, y]))['value']
-                    val_clipped = np.clip(val, z_min, z_max)
-                    zs.append(val_clipped)
-                except:
-                    zs.append(np.nan)
+                        val = current_func_obj(np.array([x, y]))['value']
+                        val_clipped = np.clip(val, z_min, z_max)
+                        zs.append(val_clipped)
+                    except:
+                        zs.append(np.nan)
 
                 ax3d.plot(xs, ys, zs, marker='o', linewidth=1, markersize=3,
                           alpha=0.6, label=f'Pfad {idx+1}')
