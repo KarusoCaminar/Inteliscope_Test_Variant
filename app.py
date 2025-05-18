@@ -764,9 +764,14 @@ with tabs[0]:
             # Funktionsobjekt für den Optimierer auswählen
             optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
             
-            # Debug-Ausgaben direkt nach der Zuweisung
+            # Debug-Ausgaben direkt nach der Zuweisung (optional)
             print("optimizer_fn =", optimizer_fn)
             print("type:", type(optimizer_fn))
+            
+            # WICHTIG: Erst prüfen, ob current_func_obj existiert!
+            if current_func_obj is None:
+                st.error("Funktion nicht gefunden oder geladen. Bitte Funktion auswählen!")
+                st.stop()
             
             # Parameter passend filtern und Optimierer aufrufen
             if selected_algorithm_key == "GD_Simple_LS":
@@ -943,16 +948,20 @@ with tabs[0]:
             GD_PARAMS = ["max_iter", "step_norm_tol", "func_impr_tol", "initial_t_ls", "callback"]
             MOMENTUM_PARAMS = ["learning_rate", "momentum_beta", "max_iter", "grad_norm_tol", "callback"]
             ADAM_PARAMS = ["learning_rate", "beta1", "beta2", "epsilon", "max_iter", "grad_norm_tol", "callback"]
-
-            # Direkte Optimierung ausführen via io.OPTIMIZERS
-            optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
-
-            import inspect
-            st.write("Optimizer:", optimizer_fn)
-            st.write("Funktions-Signatur:", inspect.signature(optimizer_fn))
-            st.write("Übergebene Parameter:", optimizer_params)
-            st.write("Callback-Type:", type(visualization_callback))
             
+            # Funktionsobjekt für den Optimierer auswählen
+            optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
+            
+            # Debug-Ausgaben direkt nach der Zuweisung (optional)
+            print("optimizer_fn =", optimizer_fn)
+            print("type:", type(optimizer_fn))
+            
+            # WICHTIG: Erst prüfen, ob current_func_obj existiert!
+            if current_func_obj is None:
+                st.error("Funktion nicht gefunden oder geladen. Bitte Funktion auswählen!")
+                st.stop()
+            
+            # Parameter passend filtern und Optimierer aufrufen
             if selected_algorithm_key == "GD_Simple_LS":
                 params = {k: v for k, v in optimizer_params.items() if k in GD_PARAMS}
                 result = optimizer_fn(current_func_obj, start_point, **params)
@@ -962,6 +971,9 @@ with tabs[0]:
             elif selected_algorithm_key == "Adam":
                 params = {k: v for k, v in optimizer_params.items() if k in ADAM_PARAMS}
                 result = optimizer_fn(current_func_obj, start_point, **params)
+            
+            # Optional: Noch ein Alias, falls du selected_optimizer brauchst
+            selected_optimizer = optimizer_fn
             
             # Visualization‑Tracker erzeugen (Callback + Speicher für Pfad & Werte)
             visualization_callback, path_hist, loss_hist = create_visualization_tracker(
