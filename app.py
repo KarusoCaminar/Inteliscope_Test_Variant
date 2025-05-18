@@ -793,6 +793,11 @@ with tabs[0]:
                 """, unsafe_allow_html=True)
                 info_placeholder = st.empty()
             
+            print("current_func_obj:", current_func_obj)
+            print("x_range:", x_range)
+            print("y_range:", y_range)
+            print("contour_levels:", contour_levels)
+            print("minima:", minima)
             # Erstelle Callback-Funktion
             visualization_callback, path_history, value_history = create_visualization_tracker(
                 current_func_obj, x_range, y_range, contour_levels, minima
