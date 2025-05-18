@@ -300,14 +300,9 @@ with st.sidebar:
 
 # Hauptbereich für Visualisierung
 # Tabs für verschiedene Visualisierungen und Interaktionen
-tabs = st.tabs([
-    "Optimierungsvisualisierung", 
-    "Funktionseditor", 
-    "Ergebnisvergleich", 
-    "Info & Hilfe"
-])
+tabs = st.tabs(["Optimierungsvisualisierung", "Funktionseditor", "Ergebnisvergleich", "Info & Hilfe"])
 
-    #Optimierungsvisualisierung
+#Optimierungsvisualisierung
 with tabs[0]:
     # Einheitliche Initialisierung für die aktuelle Funktion und Metainfos
     current_func_obj = None
@@ -364,351 +359,341 @@ with tabs[0]:
     # Layout für die Visualisierung
     col1, col2 = st.columns([1, 1])
     
-with col1:
-# --- col1: Optimierungsvisualisierung, linke Spalte ---
-if current_func_obj:
-    plot3d_container = st.container()
-    controls3d_container = st.container()
+    with col1:
+            # Erstelle 3D-Plot mit Matplotlib und füge Kontrollen hinzu
+            if current_func_obj:
+                # Erstelle Container für 3D Plot und Kontrollen
+                plot3d_container = tainer()
+                controls3d_container = tainer()
+                
+                # Parameter für Matplotlib Plot
+                if 'elev_3d' not in st.session_state:
+                    st.session_state.elev_3d = 30
+                if 'azim_3d' not in st.session_state:
+                    st.session_state.azim_3d = 45
+                if 'dist_3d' not in st.session_state:
+                    st.session_state.dist_3d = 10
+                    
+                # Steuerungsbereich mit ansprechendem Design
+                with controls3d_container:
+                    st.markdown("""
+                    <div style="background-color: #4d8bf0; padding: 8px; border-radius: 8px; margin-bottom: 10px;">
+                        <h4 style="color: white; margin: 0;">3D Ansicht Steuerung</h4>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Buttons für Standardansichten in einer Zeile
+                    btn_cols = st.columns(5)
+                    if btn_cols[0].button("Von oben", key="top_view", type="primary", use_container_width=True):
+                        st.session_state.elev_3d = 90
+                        st.session_state.azim_3d = 0
+                    
+                    if btn_cols[1].button("Von vorne", key="front_view", type="primary", use_container_width=True):
+                        st.session_state.elev_3d = 0
+                        st.session_state.azim_3d = 0
+                        
+                    if btn_cols[2].button("Von rechts", key="right_view", type="primary", use_container_width=True):
+                        st.session_state.elev_3d = 0
+                        st.session_state.azim_3d = 90
+                        
+                    if btn_cols[3].button("Isometrisch", key="iso_view", type="primary", use_container_width=True):
+                        st.session_state.elev_3d = 30
+                        st.session_state.azim_3d = 45
+                        
+                    if btn_cols[4].button("Von links", key="left_view", type="primary", use_container_width=True):
+                        st.session_state.elev_3d = 0
+                        st.session_state.azim_3d = 270
+                    
+                    # Slider für feinere Kontrolle
+                    cols = st.columns(3)
+                    with cols[0]:
+                        st.session_state.elev_3d = st.slider("Elevation", 0, 90, 
+                                                           st.session_state.elev_3d, 
+                                                           key="elev_slider")
+                    with cols[1]:
+                        st.session_state.azim_3d = st.slider("Azimuth", 0, 360, 
+                                                           st.session_state.azim_3d, 
+                                                           key="azim_slider")
+                    with cols[2]:
+                        st.session_state.dist_3d = st.slider("Zoom", 5, 20, 
+                                                          st.session_state.dist_3d, 
+                                                          key="dist_slider")
+                
+                # 3D Plot mit Matplotlib erzeugen
+                with plot3d_container:
+                    fig3d = plt.figure(figsize=(8, 6))
+                    ax3d = fig3d.add_subplot(111, projection='3d')
+                    
+                    # Erzeuge Gitter für 3D-Plot
+                    x = np.linspace(x_range[0], x_range[1], 50)
+                    y = np.linspace(y_range[0], y_range[1], 50)
+                    X, Y = np.meshgrid(x, y)
+                    Z = np.zeros_like(X)
+                    
+                    # Berechne Funktionswerte auf dem Gitter
+                    for i in range(X.shape[0]):
+                        for j in range(X.shape[1]):
+                            try:
+                                params = np.array([X[i, j], Y[i, j]])
+                                result = current_func_obj(params)
+                                Z[i, j] = result['value']
+                            except:
+                                Z[i, j] = np.nan
+                    
+                    # Statistische Verarbeitung für bessere Visualisierung
+                    Z_finite = Z[np.isfinite(Z)]
+                    if len(Z_finite) > 0:
+                        z_mean = np.mean(Z_finite)
+                        z_std = np.std(Z_finite)
+                        z_min = max(np.min(Z_finite), z_mean - 5*z_std)
+                        z_max = min(np.max(Z_finite), z_mean + 5*z_std)
+                        
+                        # Extremwerte begrenzen
+                        Z_plot = np.copy(Z)
+                        Z_plot[(Z_plot < z_min) & np.isfinite(Z_plot)] = z_min
+                        Z_plot[(Z_plot > z_max) & np.isfinite(Z_plot)] = z_max
+                    else:
+                        Z_plot = Z
+                    
+                    # Zeichne 3D-Oberfläche
+                    surf = ax3d.plot_surface(X, Y, Z_plot, cmap='viridis', 
+                                            linewidth=0, antialiased=True, alpha=0.8)
+                    
+                    # Achsenbeschriftungen
+                    ax3d.set_xlabel('X')
+                    ax3d.set_ylabel('Y')
+                    ax3d.set_zlabel('Funktionswert')
+                    ax3d.set_title(f"3D-Oberfläche: {st.session_state.ausgewählte_funktion}")
+                    
+                    # Zeige bekannte Minima, falls vorhanden
+                    if minima is not None:
+                        for m in minima:
+                            try:
+                                z_val = current_func(np.array(m))['value']
+                                ax3d.scatter([m[0]], [m[1]], [z_val], color='red', marker='+', s=120, 
+                                            linewidths=2, label='Bekanntes Minimum')
+                            except:
+                                pass
 
-    # Initialisiere Kamera-Parameter
-    if 'elev_3d' not in st.session_state:
-        st.session_state.elev_3d = 30
-    if 'azim_3d' not in st.session_state:
-        st.session_state.azim_3d = 45
-    if 'dist_3d' not in st.session_state:
-        st.session_state.dist_3d = 10
-
-    #Steuerungsbereich mit ansprechendem Desing
-    with controls3d_container:
-        st.markdown(
-            """<div style="background-color: #4d8bf0; padding: 8px; 
-               border-radius: 8px; margin-bottom: 10px;">
-               <h4 style="color: white; margin: 0;">3D Ansicht Steuerung</h4>
-               </div>""",
-            unsafe_allow_html=True
-        )
-        col_top, col_front, col_right, col_iso, col_left = st.columns(5)
-        if col_top.button("Oben", key="top_view", type="secondary", use_container_width=True):
-            st.session_state.elev_3d, st.session_state.azim_3d = 90, 0
-        if col_front.button("Vorne", key="front_view", type="secondary", use_container_width=True):
-            st.session_state.elev_3d, st.session_state.azim_3d = 0, 0
-        if col_right.button("Rechts", key="right_view", type="secondary", use_container_width=True):
-            st.session_state.elev_3d, st.session_state.azim_3d = 0, 90
-        if col_iso.button("Iso", key="iso_view", type="secondary", use_container_width=True):
-            st.session_state.elev_3d, st.session_state.azim_3d = 30, 45
-        if col_left.button("Links", key="left_view", type="secondary", use_container_width=True):
-            st.session_state.elev_3d, st.session_state.azim_3d = 0, 270
-
-        col_elev, col_azim = st.columns(2)
-        st.session_state.elev_3d = col_elev.slider(
-            "Elevation", 0, 90, st.session_state.elev_3d, key="elev_slider"
-        )
-        st.session_state.azim_3d = col_azim.slider(
-            "Azimuth", 0, 360, st.session_state.azim_3d, key="azim_slider"
-        )
-
-    with plot3d_container:
-        fig3d = plt.figure(figsize=(8, 6))
-        ax3d = fig3d.add_subplot(111, projection='3d')
-        # Erzeuge Gitter für 3D-Plot
-        x_plot = np.linspace(x_range[0], x_range[1], 50)
-        y_plot = np.linspace(y_range[0], y_range[1], 50)
-        X_plot, Y_plot = np.meshgrid(x_plot, y_plot)
-        Z_plot_vals = np.zeros_like(X_plot)
-        
-        # Berechne Funktionswerte auf dem Gitter
-        for i_plot in range(X_plot.shape[0]):
-            for j_plot in range(X_plot.shape[1]):
-                try:
-                    Z_plot_vals[i_plot, j_plot] = current_func_obj(np.array([X_plot[i_plot, j_plot], Y_plot[i_plot, j_plot]]))['value']
-                except:
-                    Z_plot_vals[i_plot, j_plot] = np.nan
-        # ... weitere 3D-Plot-Logik, Clipping, Path etc. ...
-
-        # Oberfläche berechnen
-        x = np.linspace(x_range[0], x_range[1], 50)
-        y = np.linspace(y_range[0], y_range[1], 50)
-        X, Y = np.meshgrid(x, y)
-        Z = np.zeros_like(X)
-        Z_finite = Z[np.isfinite(Z)]
-        if len(Z_finite):
-            z_mean, z_std = Z_finite.mean(), Z_finite.std()
-            z_min = max(Z_finite.min(), z_mean - 5*z_std)
-            z_max = min(Z_finite.max(), z_mean + 5*z_std)
-            Z_plot = Z.copy()
-            Z_plot[(Z_plot < z_min) & np.isfinite(Z_plot)] = z_min
-            Z_plot[(Z_plot > z_max) & np.isfinite(Z_plot)] = z_max
-        else:
-            Z_plot = Z
-        surf = ax3d.plot_surface(
-            X, Y, Z_plot,
-            cmap='viridis', linewidth=0, antialiased=True, alpha=0.8
-        )
-        ax3d.set_xlabel('X')
-        ax3d.set_ylabel('Y')
-        ax3d.set_zlabel('Funktionswert')
-        ax3d.set_title(f"3D-Oberfläche: {st.session_state.ausgewählte_funktion}")
-
-        # Zeige bekannte Minima, falls vorhanden
-if minima is not None:
-    for m in minima:
-        try:
-            z_val = current_func_obj(np.array(m))['value']
-            ax3d.scatter([m[0]], [m[1]], [z_val], color='red', marker='+', s=120,
-                         linewidths=2, label='Bekanntes Minimum')
-        except Exception:
-            pass
-
-# Zeichne die Top-20 Optimierungspfade (aus der neuen App-Logik, falls gewünscht)
-paths_to_plot = []
-if "optimierungsergebnisse" in st.session_state and st.session_state.optimierungsergebnisse:
-    # Nur Läufe für die aktuell ausgewählte Funktion filtern
-    runs = [
-        r for r in st.session_state.optimierungsergebnisse.values()
-        if r.get('function') == st.session_state.ausgewählte_funktion and 'history' in r
-    ]
-    # Nach finalem Loss sortieren (kleinster Wert = beste Lösung)
-    runs_sorted = sorted(
-        runs,
-        key=lambda r: r.get('loss_history', [float('inf')])[-1]
-    )
-    # Top 20 extrahieren
-    for run in runs_sorted[:20]:
-        hist = run.get('history')
-        if hist:
-            paths_to_plot.append(np.array(hist))
-
-for idx, path in enumerate(paths_to_plot):
-    xs, ys = path[:, 0], path[:, 1]
-    zs = []
-    for x, y in zip(xs, ys):
-        try:
-            val = current_func_obj(np.array([x, y]))['value']
-            val_clipped = np.clip(val, z_min, z_max) if np.isfinite(z_min) and np.isfinite(z_max) else val
-            zs.append(val_clipped)
-        except Exception:
-            zs.append(np.nan)
-    ax3d.plot(xs, ys, zs, marker='o', linewidth=1, markersize=3,
-              alpha=0.6, label=f'Pfad {idx+1}' if idx < 1 else None)  # Nur 1x label für Legende
-
-# Zeige den neuesten Einzelpfad prominent wie in der alten App
-if st.session_state.optimierungsergebnisse:
-    current_function_results = {
-        algo: result for algo, result in st.session_state.optimierungsergebnisse.items()
-        if result["function"] == st.session_state.ausgewählte_funktion and "history" in result
-    }
-    if current_function_results:
-        sorted_results = sorted(
-            current_function_results.items(),
-            key=lambda x: x[1].get("timestamp", 0),
-            reverse=True
-        )
-        # Neuestes Ergebnis nehmen
-        algo_name, result_data = sorted_results[0]
-        if "history" in result_data and result_data["history"]:
-            path_points = np.array(result_data["history"])
-            path_x = path_points[:, 0]
-            path_y = path_points[:, 1]
-            path_z = np.zeros(len(path_points))
-            for i, point in enumerate(result_data["history"]):
-                try:
-                    params = np.array(point)
-                    res = current_func_obj(params) if callable(current_func_obj) else current_func(params)
-                    path_z[i] = res.get('value', np.nan)
-                    if np.isfinite(path_z[i]) and np.isfinite(z_min) and np.isfinite(z_max):
-                        path_z[i] = min(max(path_z[i], z_min), z_max)
-                except Exception:
-                    path_z[i] = np.nan
-            # Startpunkt
-            ax3d.scatter([path_x[0]], [path_y[0]], [path_z[0]],
-                         color='blue', marker='o', s=100, label='Start')
-            # Endpunkt
-            ax3d.scatter([path_x[-1]], [path_y[-1]], [path_z[-1]],
-                         color='green', marker='*', s=100, label='Ende')
-            # Pfad einzeichnen
-            ax3d.plot(path_x, path_y, path_z, 'r-o',
-                      linewidth=2, markersize=3, label='Optimierungspfad')
-
-# Legende & Colorbar
-handles, labels = ax3d.get_legend_handles_labels()
-by_label = dict(zip(labels, handles))
-if by_label:
-    ax3d.legend(by_label.values(), by_label.keys(), loc='upper right')
-fig3d.colorbar(surf, ax=ax3d, shrink=0.5, aspect=5)
-
-# Kameraeinstellungen
-ax3d.view_init(elev=st.session_state.elev_3d, azim=st.session_state.azim_3d)
-try:
-    ax3d.dist = st.session_state.dist_3d / 10  # Skaliere für bessere Werte
-except Exception:
-    pass
-
-# Zeige Plot
-st.pyplot(fig3d)
-plt.close(fig3d)
+                    # Zeichne die Top-10 Optimierungspfade (aus der neuen App-Logik, falls gewünscht)
+                    paths_to_plot = []
+                    if "optimierungsergebnisse" in st.session_state and st.session_state.optimierungsergebnisse:
+                        # Nur Läufe für die aktuell ausgewählte Funktion filtern
+                        runs = [
+                            r for r in st.session_state.optimierungsergebnisse.values()
+                            if r.get('function') == st.session_state.ausgewählte_funktion and 'history' in r
+                        ]
+                        # Nach finalem Loss sortieren (kleinster Wert = beste Lösung)
+                        runs_sorted = sorted(
+                            runs,
+                            key=lambda r: r.get('loss_history', [float('inf')])[-1]
+                        )
+                        # Top 10 extrahieren
+                        for run in runs_sorted[:10]:
+                            hist = run.get('history')
+                            if hist:
+                                paths_to_plot.append(np.array(hist))
+                    
+                    for idx, path in enumerate(paths_to_plot):
+                        xs, ys = path[:, 0], path[:, 1]
+                        zs = []
+                        for x, y in zip(xs, ys):
+                            try:
+                                val = current_func_obj(np.array([x, y]))['value']
+                                val_clipped = np.clip(val, z_min, z_max) if np.isfinite(z_min) and np.isfinite(z_max) else val
+                                zs.append(val_clipped)
+                            except Exception:
+                                zs.append(np.nan)
+                        ax3d.plot(xs, ys, zs, marker='o', linewidth=1, markersize=3,
+                                  alpha=0.6, label=f'Pfad {idx+1}' if idx < 1 else None)  # Nur 1x label für Legende
+                    
+                    # Zeige den neuesten Einzelpfad prominent wie in der alten App
+                    if st.session_state.optimierungsergebnisse:
+                        current_function_results = {
+                            algo: result for algo, result in st.session_state.optimierungsergebnisse.items()
+                            if result["function"] == st.session_state.ausgewählte_funktion and "history" in result
+                        }
+                        if current_function_results:
+                            sorted_results = sorted(
+                                current_function_results.items(),
+                                key=lambda x: x[1].get("timestamp", 0),
+                                reverse=True
+                            )
+                            # Neuestes Ergebnis nehmen
+                            algo_name, result_data = sorted_results[0]
+                            if "history" in result_data and result_data["history"]:
+                                path_points = np.array(result_data["history"])
+                                path_x = path_points[:, 0]
+                                path_y = path_points[:, 1]
+                                path_z = np.zeros(len(path_points))
+                                for i, point in enumerate(result_data["history"]):
+                                    try:
+                                        params = np.array(point)
+                                        res = current_func_obj(params) if callable(current_func_obj) else current_func(params)
+                                        path_z[i] = res.get('value', np.nan)
+                                        if np.isfinite(path_z[i]) and np.isfinite(z_min) and np.isfinite(z_max):
+                                            path_z[i] = min(max(path_z[i], z_min), z_max)
+                                    except Exception:
+                                        path_z[i] = np.nan
+                                # Startpunkt
+                                ax3d.scatter([path_x[0]], [path_y[0]], [path_z[0]],
+                                             color='blue', marker='o', s=100, label='Start')
+                                # Endpunkt
+                                ax3d.scatter([path_x[-1]], [path_y[-1]], [path_z[-1]],
+                                             color='green', marker='*', s=100, label='Ende')
+                                # Pfad einzeichnen
+                                ax3d.plot(path_x, path_y, path_z, 'r-o',
+                                          linewidth=2, markersize=3, label='Optimierungspfad')
+                    
+                    # Legende & Colorbar
+                    handles, labels = ax3d.get_legend_handles_labels()
+                    by_label = dict(zip(labels, handles))
+                    if by_label:
+                        ax3d.legend(by_label.values(), by_label.keys(), loc='upper right')
+                    fig3d.colorbar(surf, ax=ax3d, shrink=0.5, aspect=5)
+                    
+                    # Kameraeinstellungen
+                    ax3d.view_init(elev=st.session_state.elev_3d, azim=st.session_state.azim_3d)
+                    try:
+                        ax3d.dist = st.session_state.dist_3d / 10  # Skaliere für bessere Werte
+                    except Exception:
+                        pass
+                    
+                    # Zeige Plot
+                    st.pyplot(fig3d)
+                    plt.close(fig3d)
     
-with col2:
-# --- col2: Optimierungsvisualisierung, rechte Spalte ---
+    with col2:
+    # --- col2: Optimierungsvisualisierung, rechte Spalte ---
+    
+    if current_func_obj:
+        plot2d_container = tainer()
+        controls2d_container = tainer()
+    
+        # Parameter für Matplotlib Plot
+        if 'contour_levels' not in st.session_state:
+            st.session_state.contour_levels = contour_levels
+        if 'zoom_factor' not in st.session_state:
+            st.session_state.zoom_factor = 1.0
+        if 'show_grid_2d' not in st.session_state:
+            st.session_state.show_grid_2d = False
+        if 'center_x' not in st.session_state:
+            st.session_state.center_x = np.mean(x_range)
+        if 'center_y' not in st.session_state:
+            st.session_state.center_y = np.mean(y_range)
+    
+        with controls2d_container:
+            st.markdown("""
+            <div style="background-color: #6a2c91; padding: 8px; border-radius: 8px; margin-bottom: 10px;">
+                <h4 style="color: white; margin: 0;">2D Ansicht Steuerung</h4>
+            </div>
+            """, unsafe_allow_html=True)
+    
+            cols = st.columns(3)
+            with cols[0]:
+                st.session_state.contour_levels = st.slider("Konturlinien", 10, 100, 
+                                                          st.session_state.contour_levels, 
+                                                          step=5,
+                                                          key="contour_slider")
+            with cols[1]:
+                st.session_state.zoom_factor = st.slider("Zoom", 0.5, 5.0, 
+                                                       st.session_state.zoom_factor, 
+                                                       step=0.1,
+                                                       key="zoom_slider")
+            with cols[2]:
+                st.session_state.show_grid_2d = st.checkbox("Gitter anzeigen", 
+                                                          st.session_state.show_grid_2d, 
+                                                          key="grid_checkbox")
 
-if current_func_obj:
-    plot2d_container = st.container()
-    controls2d_container = st.container()
-
-    # Parameter für Matplotlib Plot
-    if 'contour_levels' not in st.session_state:
-        st.session_state.contour_levels = contour_levels
-    if 'zoom_factor' not in st.session_state:
-        st.session_state.zoom_factor = 1.0
-    if 'show_grid_2d' not in st.session_state:
-        st.session_state.show_grid_2d = False
-    if 'center_x' not in st.session_state:
-        st.session_state.center_x = np.mean(x_range)
-    if 'center_y' not in st.session_state:
-        st.session_state.center_y = np.mean(y_range)
-
-    with controls2d_container:
-        st.markdown("""
-        <div style="background-color: #6a2c91; padding: 8px; border-radius: 8px; margin-bottom: 10px;">
-            <h4 style="color: white; margin: 0;">2D Ansicht Steuerung</h4>
-        </div>
-        """, unsafe_allow_html=True)
-
-        cols = st.columns(3)
-        with cols[0]:
-            st.session_state.contour_levels = st.slider("Konturlinien", 10, 100, 
-                                                      st.session_state.contour_levels, 
-                                                      step=5,
-                                                      key="contour_slider")
-        with cols[1]:
-            st.session_state.zoom_factor = st.slider("Zoom", 0.5, 5.0, 
-                                                   st.session_state.zoom_factor, 
-                                                   step=0.1,
-                                                   key="zoom_slider")
-        with cols[2]:
-            st.session_state.show_grid_2d = st.checkbox("Gitter anzeigen", 
-                                                      st.session_state.show_grid_2d, 
-                                                      key="grid_checkbox")
-
-    with plot2d_container:
-        fig2d = plt.figure(figsize=(8, 6))
-        ax2d = fig2d.add_subplot(111)
-        x_half_range = (x_range[1] - x_range[0]) / (2 * st.session_state.zoom_factor)
-        y_half_range = (y_range[1] - y_range[0]) / (2 * st.session_state.zoom_factor)
-        x_zoom_range = (st.session_state.center_x - x_half_range, st.session_state.center_x + x_half_range)
-        y_zoom_range = (st.session_state.center_y - y_half_range, st.session_state.center_y + y_half_range)
-        grid_size = int(100 * np.sqrt(st.session_state.zoom_factor))
-        x = np.linspace(x_zoom_range[0], x_zoom_range[1], grid_size)
-        y = np.linspace(y_zoom_range[0], y_zoom_range[1], grid_size)
-        X, Y = np.meshgrid(x, y)
-        Z = np.zeros_like(X)
-        for i in range(X.shape[0]):
-            for j in range(X.shape[1]):
-                try:
-                    params = np.array([X[i, j], Y[i, j]])
-                    result = current_func_obj(params)
-                    Z[i, j] = result['value']
-                except:
-                    Z[i, j] = np.nan
-        cp = ax2d.contourf(X, Y, Z, levels=st.session_state.contour_levels, 
-                         cmap='viridis', alpha=0.8)
-        contour_lines = ax2d.contour(X, Y, Z, 
-                                  levels=min(20, st.session_state.contour_levels//3), 
-                                  colors='black', alpha=0.4, linewidths=0.5)
-        ax2d.clabel(contour_lines, inline=True, fontsize=8, fmt='%.1f')
-        colorbar = fig2d.colorbar(cp, ax=ax2d)
-        colorbar.set_label('Funktionswert')
-        ax2d.set_xlabel('X')
-        ax2d.set_ylabel('Y')
-        ax2d.set_title(f"Konturplot: {st.session_state.ausgewählte_funktion}")
-        if minima is not None:
-            for m in minima:
-                ax2d.plot(m[0], m[1], 'X', color='red', markersize=8, markeredgecolor='black')
-        ax2d.set_xlim(x_zoom_range)
-        ax2d.set_ylim(y_zoom_range)
-        if st.session_state.show_grid_2d:
-            ax2d.grid(True, linestyle='--', alpha=0.6)
-        st.pyplot(fig2d)
-        plt.close(fig2d)
-
-        # Zeige Verlauf des Funktionswertes
-        if best_loss_history:
-            # Erstelle Plot für Funktionswerte
-            fig_loss = plt.figure(figsize=(8, 4))
-            ax_loss = fig_loss.add_subplot(111)
+        # --- 2D-Konturplot ---
+        with tainer():
+            fig2d = plt.figure(figsize=(8, 6))
+            ax2d = fig2d.add_subplot(111)
             
-        # Zeichne Verlaufskurve
-        iterations = range(len(best_loss_history))
-        ax_loss.plot(iterations, best_loss_history, '-o', color='blue', 
-                    linewidth=2, markersize=3)
-        
-        # Logarithmische Darstellung, falls sinnvoll
-        if min(best_loss_history) > 0 and max(best_loss_history) / min(best_loss_history) > 10:
-            ax_loss.set_yscale('log')
-        
-        # Füge Titel und Achsenbeschriftungen hinzu
-        ax_loss.set_title(f"Verlauf des Funktionswertes - {algorithm_display_name}")
-        ax_loss.set_xlabel('Iteration')
-        ax_loss.set_ylabel('Funktionswert')
-        
-        # Annotiere den finalen Wert
-        if len(best_loss_history) > 0:
-            final_value = best_loss_history[-1]
-            ax_loss.annotate(f"Final: {final_value:.4f}", 
-                          xy=(len(best_loss_history)-1, final_value),
-                          xytext=(len(best_loss_history)-5, final_value*1.1),
-                          arrowprops=dict(arrowstyle='->'),
-                          bbox=dict(boxstyle='round,pad=0.3', fc='yellow', alpha=0.3))
-        
-        # Zeige horizontale Linie beim besten Wert
-        best_value = min(best_loss_history)
-        ax_loss.axhline(y=best_value, color='green', linestyle='--', alpha=0.5)
-        ax_loss.annotate(f"Best: {best_value:.4f}", 
-                      xy=(len(best_loss_history)//2, best_value),
-                      xytext=(len(best_loss_history)//2, best_value*0.9),
-                      arrowprops=dict(arrowstyle='->'),
-                      bbox=dict(boxstyle='round,pad=0.3', fc='lightgreen', alpha=0.3))
-        
-        # Verbessere das Erscheinungsbild
-        ax_loss.grid(True, alpha=0.3)
-        fig_loss.tight_layout()
-        
-        st.pyplot(fig_loss)
-        plt.close(fig_loss)
+            # Berechne zoomed-Bereich um das Zentrum
+            x_half_range = (x_range[1] - x_range[0]) / (2 * st.session_state.zoom_factor)
+            y_half_range = (y_range[1] - y_range[0]) / (2 * st.session_state.zoom_factor)
+            x_zoom_range = (st.session_state.center_x - x_half_range, 
+                           st.session_state.center_x + x_half_range)
+            y_zoom_range = (st.session_state.center_y - y_half_range, 
+                           st.session_state.center_y + y_half_range)
+            
+            # Erzeuge feines Gitter für Konturplot
+            grid_size = int(100 * np.sqrt(st.session_state.zoom_factor))
+            x = np.linspace(x_zoom_range[0], x_zoom_range[1], grid_size)
+            y = np.linspace(y_zoom_range[0], y_zoom_range[1], grid_size)
+            X, Y = np.meshgrid(x, y)
+            Z = np.zeros_like(X)
+            
+            # Berechne Funktionswerte auf dem Gitter
+            for i in range(X.shape[0]):
+                for j in range(X.shape[1]):
+                    try:
+                        params = np.array([X[i, j], Y[i, j]])
+                        result = current_func(params)
+                        Z[i, j] = result['value']
+                    except:
+                        Z[i, j] = np.nan
+            
+            # Zeichne Konturplot
+            cp = ax2d.contourf(X, Y, Z, levels=st.session_state.contour_levels, 
+                             cmap='viridis', alpha=0.8)
+            contour_lines = ax2d.contour(X, Y, Z, 
+                                      levels=min(20, st.session_state.contour_levels//3), 
+                                      colors='black', alpha=0.4, linewidths=0.5)
+            ax2d.clabel(contour_lines, inline=True, fontsize=8, fmt='%.1f')
+            
+            # Farbskala hinzufügen
+            colorbar = fig2d.colorbar(cp, ax=ax2d)
+            colorbar.set_label('Funktionswert')
+            
+            # Achsenbeschriftungen und Titel
+            ax2d.set_xlabel('X')
+            ax2d.set_ylabel('Y')
+            ax2d.set_title(f"Konturplot: {st.session_state.ausgewählte_funktion}")
+            
+            # Minima einzeichnen, falls vorhanden
+            if minima is not None:
+                for m in minima:
+                    ax2d.plot(m[0], m[1], 'X', color='red', markersize=8, markeredgecolor='black')
+            
+            # Achsengrenzen setzen
+            ax2d.set_xlim(x_zoom_range)
+            ax2d.set_ylim(y_zoom_range)
+            
+            # Gitter zeichnen, falls gewünscht
+            if st.session_state.show_grid_2d:
+                ax2d.grid(True, linestyle='--', alpha=0.6)
+            
+            # Plot anzeigen
+            st.pyplot(fig2d)
+            plt.close(fig2d)
 
-# Direkte Optimierung ausführen (ohne run_simple_optimization)
-selected_optimizer = iopt.OPTIMIZERS[selected_algorithm_key]
-
-# Callback und Parameter sollten zuvor erzeugt worden sein:
-# visualization_callback, optimizer_params
-
-# Optimierung starten
-result = selected_optimizer(
-    func=current_func_obj,
-    x0=start_point,
-    callback=visualization_callback,
-    **optimizer_params
-)
-
-# Resultate extrahieren
-best_x = result.x_best              # oder result.x, je nach Rückgabe
-best_history = result.history       # Pfad aller x_i
-best_loss_history = result.loss_history  # Funktionswerte
-status = result.status              # Status-String
-
-# Initialisiere Momentum-Variable
-velocity = np.zeros_like(x)
-
-# Initialisiere Parameter für adaptive Lernrate
-best_value = value
-patience = 5
-patience_counter = 0
-lr_reduce_factor = 0.5
-lr_increase_factor = 1.1
-min_lr = 1e-6
-current_lr = learning_rate
-
-# Metainformationen für Statusberichterstattung
-info_text = "Optimierung gestartet"
+            # Direkte Optimierung ausführen (ohne run_simple_optimization)
+            selected_optimizer = iopt.OPTIMIZERS[selected_algorithm_key]
+            
+            # Callback und Parameter sollten zuvor erzeugt worden sein:
+            
+            # Resultate extrahieren
+            best_x = result.x_best              # oder result.x, je nach Rückgabe
+            best_history = result.history       # Pfad aller x_i
+            best_loss_history = result.loss_history  # Funktionswerte
+            status = result.status              # Status-String
+            
+            # Initialisiere Momentum-Variable
+            velocity = np.zeros_like(x)
+            
+            # Initialisiere Parameter für adaptive Lernrate
+            best_value = value
+            patience = 5
+            patience_counter = 0
+            lr_reduce_factor = 0.5
+            lr_increase_factor = 1.1
+            min_lr = 1e-6
+            current_lr = learning_rate
+            
+            # Metainformationen für Statusberichterstattung
+            info_text = "Optimierung gestartet"
 
             
             # Zeichne Konturplot
@@ -739,14 +724,10 @@ info_text = "Optimierung gestartet"
     </div>
     """, unsafe_allow_html=True)
     
-    # Container für den Live-Tracker
-    live_tracking_container = st.container()
-    
-    # Container für die Info-Box
-    info_box_container = st.container()
-    
-    # Bereich für die Optimierungspfade
-    results_container = st.container()
+    # --- Live-Tracking & Info-Boxen-Container ---
+    live_tracking_container = tainer()
+    info_box_container = tainer()
+    results_container = tainer()
     
     # Führe Optimierung aus, wenn der Button geklickt wurde
     if start_optimization and current_func_obj:
@@ -882,8 +863,7 @@ info_text = "Optimierung gestartet"
                 "loss_history": best_loss_history,
                 "status": status,
                 "timestamp": time.time()
-            }
-
+            }   
             
             # Zeige Zusammenfassung der Ergebnisse
             with results_container:
@@ -892,8 +872,7 @@ info_text = "Optimierung gestartet"
                     <h3 style="color: #15b371; margin: 0;">Zusammenfassung der Optimierung</h3>
                 </div>
                 """, unsafe_allow_html=True)
-                
-                
+                     
             # Zeige Details zu den Ergebnissen
             st.markdown("""
             <div style="background-color: #f0f8ff; padding: 8px; border-radius: 8px; margin-top: 15px;">
@@ -1244,30 +1223,30 @@ info_text = "Optimierung gestartet"
                         path_y = path_points[:, 1]
                         path_z = np.zeros(len(path_points))
                         
-                    # Berechne Z-Werte für den Pfad
-                    for i, point in enumerate(result_data["history"]):
-                        try:
-                            params = np.array(point)
-                            res = current_func_obj(params)
-                            path_z[i] = res.get('value', np.nan)
-                            
-                            # Begrenze extreme Z-Werte falls statistisch verarbeitet
-                            if np.isfinite(path_z[i]) and np.isfinite(z_min) and np.isfinite(z_max):
-                                path_z[i] = min(max(path_z[i], z_min), z_max)
-                        except:
-                            path_z[i] = np.nan
+                        # Berechne Z-Werte für den Pfad
+                        for i, point in enumerate(result_data["history"]):
+                            try:
+                                params = np.array(point)
+                                res = current_func_obj(params)
+                                path_z[i] = res.get('value', np.nan)
+                                
+                                # Begrenze extreme Z-Werte falls statistisch verarbeitet
+                                if np.isfinite(path_z[i]) and np.isfinite(z_min) and np.isfinite(z_max):
+                                    path_z[i] = min(max(path_z[i], z_min), z_max)
+                            except:
+                                path_z[i] = np.nan
                     
-                    # Startpunkt besonders hervorheben
-                    ax3d_prev.scatter([path_x[0]], [path_y[0]], [path_z[0]], 
-                                color='blue', marker='o', s=100, label='Start')
-                    
-                    # Endpunkt besonders hervorheben
-                    ax3d_prev.scatter([path_x[-1]], [path_y[-1]], [path_z[-1]], 
-                                color='red', marker='*', s=100, label='Ende')
-                    
-                    # Pfad einzeichnen
-                    ax3d_prev.plot(path_x, path_y, path_z, 'r-o', 
-                              linewidth=2, markersize=4, label='Optimierungspfad')
+                        # Startpunkt besonders hervorheben
+                        ax3d_prev.scatter([path_x[0]], [path_y[0]], [path_z[0]], 
+                                    color='blue', marker='o', s=100, label='Start')
+                        
+                        # Endpunkt besonders hervorheben
+                        ax3d_prev.scatter([path_x[-1]], [path_y[-1]], [path_z[-1]], 
+                                    color='red', marker='*', s=100, label='Ende')
+                        
+                        # Pfad einzeichnen
+                        ax3d_prev.plot(path_x, path_y, path_z, 'r-o', 
+                                  linewidth=2, markersize=4, label='Optimierungspfad')
                     
                     # Minima einzeichnen, falls vorhanden
                     if minima is not None:
@@ -1562,221 +1541,221 @@ with tabs[2]:
                     
                     st.dataframe(result_data)
                 
-# Zeige die Pfade aller ausgewählten Algorithmen in einem Plot
-if selected_function_for_comparison in pf.MATH_FUNCTIONS_LIB:
-    func_info = pf.MATH_FUNCTIONS_LIB[selected_function_for_comparison]
-    current_func_obj = func_info["func"]
-    x_range = func_info["default_range"][0]
-    y_range = func_info["default_range"][1]
-    contour_levels = func_info.get("contour_levels", 40)
-    try:
-        func_meta = current_func_obj(np.array([0, 0]))
-        minima = func_meta.get("minima", None)
-    except Exception:
-        minima = None
-
-elif selected_function_for_comparison in st.session_state.custom_funcs:
-    current_func_obj = st.session_state.custom_funcs[selected_function_for_comparison]
-    x_range = (-5, 5)
-    y_range = (-5, 5)
-    contour_levels = 30
-    minima = None
-else:
-    st.error("Die ausgewählte Funktion wurde nicht gefunden.")
-    current_func_obj = None
-
-if current_func_obj:
-    # Erstelle Figur und Achsen
-    fig, ax = plt.subplots(figsize=(10, 8))
-
-    # Erzeuge Mesh-Daten (direkte Implementierung)
-    n_points = 100  # Anzahl der Punkte pro Dimension
-    x = np.linspace(x_range[0], x_range[1], n_points)
-    y = np.linspace(y_range[0], y_range[1], n_points)
-    X_mesh, Y_mesh = np.meshgrid(x, y)
-    Z_mesh = np.zeros_like(X_mesh)
-
-    # Berechne Funktionswerte auf dem Gitter
-    for i in range(X_mesh.shape[0]):
-        for j in range(X_mesh.shape[1]):
-            try:
-                params = np.array([X_mesh[i, j], Y_mesh[i, j]])
-                result = current_func_obj(params)
-                Z_mesh[i, j] = result.get('value', np.nan)
-            except:
-                Z_mesh[i, j] = np.nan
-                    
-    # Statistische Verarbeitung für bessere Visualisierung
-    Z_finite = Z_mesh[np.isfinite(Z_mesh)]
-    if len(Z_finite) > 0:
-        z_mean = np.mean(Z_finite)
-        z_std = np.std(Z_finite)
-        z_min = max(np.min(Z_finite), z_mean - 5*z_std)
-        z_max = min(np.max(Z_finite), z_mean + 5*z_std)
-                        
-    # Extreme Werte begrenzen
-    Z_mesh_mod = np.copy(Z_mesh)
-    Z_mesh_mod[(Z_mesh_mod < z_min) & np.isfinite(Z_mesh_mod)] = z_min
-    Z_mesh_mod[(Z_mesh_mod > z_max) & np.isfinite(Z_mesh_mod)] = z_max
-    Z_mesh = Z_mesh_mod
-
-    # Zeichne Konturplot
-    contour = ax.contourf(X_mesh, Y_mesh, Z_mesh, contour_levels, cmap='viridis', alpha=0.8)
-                    
-    # Füge Farbbalken hinzu
-    cbar = fig.colorbar(contour, ax=ax)
-    cbar.set_label('Funktionswert')
-                    
-# Zeichne Pfade für jeden Algorithmus
-colors = ['red', 'blue', 'green', 'purple', 'orange', 'brown', 'pink', 'gray']
-
-for i, algo in enumerate(selected_algos):
-    result = st.session_state.optimierungsergebnisse[algo]
-    path = result.get("history", [])
-
-    if path:
-        path_x = [p[0] for p in path]
-        path_y = [p[1] for p in path]
-        ax.plot(path_x, path_y, '-o', color=colors[i % len(colors)], linewidth=2, markersize=4, label=algo)
-
-        # Markiere Endpunkt
-        ax.plot(path_x[-1], path_y[-1], '*', color=colors[i % len(colors)], markersize=10)
-
-# Zeichne bekannte Minima, falls vorhanden
-if minima:
-    for minimum in minima:
-        ax.plot(minimum[0], minimum[1], 'X', color='white', markersize=8, markeredgecolor='black')
-
-# Füge Titel hinzu
-ax.set_title(f"Vergleich der Optimierungspfade: {selected_function_for_comparison}")
-
-# Achsenbeschriftungen
-ax.set_xlabel('X')
-ax.set_ylabel('Y')
-
-# Zeige Legende
-ax.legend()
-
-# Setze Achsengrenzen
-ax.set_xlim(x_range)
-ax.set_ylim(y_range)
-
-st.pyplot(fig)
-plt.close(fig)
-
-# 3D-Vergleich
-st.markdown("### 3D-Vergleich der Optimierungspfade")
-
-# Erstelle 3D-Plot mit Plotly
-fig3d = go.Figure()
-
-# Füge Oberfläche hinzu (direkte Implementierung)
-n_points = 50  # Reduzierte Auflösung für bessere Performance im 3D-Plot
-x = np.linspace(x_range[0], x_range[1], n_points)
-y = np.linspace(y_range[0], y_range[1], n_points)
-X_mesh, Y_mesh = np.meshgrid(x, y)
-Z_mesh = np.zeros_like(X_mesh)
-
-# Berechne Funktionswerte auf dem Gitter
-for i in range(X_mesh.shape[0]):
-    for j in range(X_mesh.shape[1]):
-        try:
-            params = np.array([X_mesh[i, j], Y_mesh[i, j]])
-            result = current_func_obj(params)
-            Z_mesh[i, j] = result.get('value', np.nan)
-        except:
-            Z_mesh[i, j] = np.nan
-
-# Statistische Verarbeitung für bessere Visualisierung
-Z_finite = Z_mesh[np.isfinite(Z_mesh)]
-if len(Z_finite) > 0:
-    z_mean = np.mean(Z_finite)
-    z_std = np.std(Z_finite)
-
-    # Begrenze extreme Werte für bessere Visualisierung
-    lower_bound = max(np.min(Z_finite), z_mean - 5*z_std)
-    upper_bound = min(np.max(Z_finite), z_mean + 5*z_std)
-
-    Z_mesh_mod = np.copy(Z_mesh)
-    Z_mesh_mod[(Z_mesh_mod < lower_bound) & np.isfinite(Z_mesh_mod)] = lower_bound
-    Z_mesh_mod[(Z_mesh_mod > upper_bound) & np.isfinite(Z_mesh_mod)] = upper_bound
-    Z_mesh = Z_mesh_mod
-
-fig3d.add_trace(go.Surface(
-    x=X_mesh, y=Y_mesh, z=Z_mesh,
-    colorscale='viridis',
-    opacity=0.8,
-    showscale=True
-))
-
-# Füge Pfade hinzu
-for i, algo in enumerate(selected_algos):
-    result = st.session_state.optimierungsergebnisse[algo]
-    path = result.get("history", [])
-
-    if path:
-        path_x = [p[0] for p in path]
-        path_y = [p[1] for p in path]
-
-        # Berechne z-Werte für den Pfad
-        path_z = []
-        for p in path:
-            try:
-                result = current_func_obj(p)
-                if 'value' in result and np.isfinite(result['value']):
-                    path_z.append(result['value'])
+                # Zeige die Pfade aller ausgewählten Algorithmen in einem Plot
+                if selected_function_for_comparison in pf.MATH_FUNCTIONS_LIB:
+                    func_info = pf.MATH_FUNCTIONS_LIB[selected_function_for_comparison]
+                    current_func_obj = func_info["func"]
+                    x_range = func_info["default_range"][0]
+                    y_range = func_info["default_range"][1]
+                    contour_levels = func_info.get("contour_levels", 40)
+                    try:
+                        func_meta = current_func_obj(np.array([0, 0]))
+                        minima = func_meta.get("minima", None)
+                    except Exception:
+                        minima = None
+                
+                elif selected_function_for_comparison in st.session_state.custom_funcs:
+                    current_func_obj = st.session_state.custom_funcs[selected_function_for_comparison]
+                    x_range = (-5, 5)
+                    y_range = (-5, 5)
+                    contour_levels = 30
+                    minima = None
                 else:
-                    path_z.append(None)
-            except:
-                path_z.append(None)
-
-        # Zeichne Pfad
-        fig3d.add_trace(go.Scatter3d(
-            x=path_x, y=path_y, z=path_z,
-            mode='lines+markers',
-            line=dict(color=colors[i % len(colors)], width=5),
-            marker=dict(size=4, color=colors[i % len(colors)]),
-            name=algo
-        ))
-
-# Füge bekannte Minima hinzu, falls vorhanden
-if minima:
-    min_x = [m[0] for m in minima]
-    min_y = [m[1] for m in minima]
-    min_z = []
-    for m in minima:
-        try:
-            z = current_func_obj(np.array(m))['value']
-            min_z.append(z)
-        except:
-            min_z.append(None)
-
-    fig3d.add_trace(go.Scatter3d(
-        x=min_x, y=min_y, z=min_z,
-        mode='markers',
-        marker=dict(size=8, color='white', symbol='x', line=dict(color='black', width=2)),
-        name='Bekannte Minima'
-    ))
-
-# Layout-Konfiguration
-fig3d.update_layout(
-    title=f"3D-Vergleich: {selected_function_for_comparison}",
-    scene=dict(
-        xaxis_title='X',
-        yaxis_title='Y',
-        zaxis_title='Funktionswert',
-        aspectratio=dict(x=1, y=1, z=0.8)
-    ),
-    margin=dict(l=0, r=0, b=0, t=30),
-    legend=dict(
-        x=0.02,
-        y=0.98,
-        bordercolor="Black",
-        borderwidth=1
-    )
-)
-
-st.plotly_chart(fig3d, use_container_width=True, height=600)
+                    st.error("Die ausgewählte Funktion wurde nicht gefunden.")
+                    current_func_obj = None
+                
+                if current_func_obj:
+                    # Erstelle Figur und Achsen
+                    fig, ax = plt.subplots(figsize=(10, 8))
+                
+                    # Erzeuge Mesh-Daten (direkte Implementierung)
+                    n_points = 100  # Anzahl der Punkte pro Dimension
+                    x = np.linspace(x_range[0], x_range[1], n_points)
+                    y = np.linspace(y_range[0], y_range[1], n_points)
+                    X_mesh, Y_mesh = np.meshgrid(x, y)
+                    Z_mesh = np.zeros_like(X_mesh)
+                
+                    # Berechne Funktionswerte auf dem Gitter
+                    for i in range(X_mesh.shape[0]):
+                        for j in range(X_mesh.shape[1]):
+                            try:
+                                params = np.array([X_mesh[i, j], Y_mesh[i, j]])
+                                result = current_func_obj(params)
+                                Z_mesh[i, j] = result.get('value', np.nan)
+                            except:
+                                Z_mesh[i, j] = np.nan
+                                    
+                    # Statistische Verarbeitung für bessere Visualisierung
+                    Z_finite = Z_mesh[np.isfinite(Z_mesh)]
+                    if len(Z_finite) > 0:
+                        z_mean = np.mean(Z_finite)
+                        z_std = np.std(Z_finite)
+                        z_min = max(np.min(Z_finite), z_mean - 5*z_std)
+                        z_max = min(np.max(Z_finite), z_mean + 5*z_std)
+                                        
+                    # Extreme Werte begrenzen
+                    Z_mesh_mod = np.copy(Z_mesh)
+                    Z_mesh_mod[(Z_mesh_mod < z_min) & np.isfinite(Z_mesh_mod)] = z_min
+                    Z_mesh_mod[(Z_mesh_mod > z_max) & np.isfinite(Z_mesh_mod)] = z_max
+                    Z_mesh = Z_mesh_mod
+                
+                    # Zeichne Konturplot
+                    contour = ax.contourf(X_mesh, Y_mesh, Z_mesh, contour_levels, cmap='viridis', alpha=0.8)
+                                    
+                    # Füge Farbbalken hinzu
+                    cbar = fig.colorbar(contour, ax=ax)
+                    cbar.set_label('Funktionswert')
+                                    
+                # Zeichne Pfade für jeden Algorithmus
+                colors = ['red', 'blue', 'green', 'purple', 'orange', 'brown', 'pink', 'gray']
+                
+                for i, algo in enumerate(selected_algos):
+                    result = st.session_state.optimierungsergebnisse[algo]
+                    path = result.get("history", [])
+                
+                    if path:
+                        path_x = [p[0] for p in path]
+                        path_y = [p[1] for p in path]
+                        ax.plot(path_x, path_y, '-o', color=colors[i % len(colors)], linewidth=2, markersize=4, label=algo)
+                
+                        # Markiere Endpunkt
+                        ax.plot(path_x[-1], path_y[-1], '*', color=colors[i % len(colors)], markersize=10)
+                
+                # Zeichne bekannte Minima, falls vorhanden
+                if minima:
+                    for minimum in minima:
+                        ax.plot(minimum[0], minimum[1], 'X', color='white', markersize=8, markeredgecolor='black')
+                
+                # Füge Titel hinzu
+                ax.set_title(f"Vergleich der Optimierungspfade: {selected_function_for_comparison}")
+                
+                # Achsenbeschriftungen
+                ax.set_xlabel('X')
+                ax.set_ylabel('Y')
+                
+                # Zeige Legende
+                ax.legend()
+                
+                # Setze Achsengrenzen
+                ax.set_xlim(x_range)
+                ax.set_ylim(y_range)
+                
+                st.pyplot(fig)
+                plt.close(fig)
+                
+                # 3D-Vergleich
+                st.markdown("### 3D-Vergleich der Optimierungspfade")
+                
+                # Erstelle 3D-Plot mit Plotly
+                fig3d = go.Figure()
+                
+                # Füge Oberfläche hinzu (direkte Implementierung)
+                n_points = 50  # Reduzierte Auflösung für bessere Performance im 3D-Plot
+                x = np.linspace(x_range[0], x_range[1], n_points)
+                y = np.linspace(y_range[0], y_range[1], n_points)
+                X_mesh, Y_mesh = np.meshgrid(x, y)
+                Z_mesh = np.zeros_like(X_mesh)
+                
+                # Berechne Funktionswerte auf dem Gitter
+                for i in range(X_mesh.shape[0]):
+                    for j in range(X_mesh.shape[1]):
+                        try:
+                            params = np.array([X_mesh[i, j], Y_mesh[i, j]])
+                            result = current_func_obj(params)
+                            Z_mesh[i, j] = result.get('value', np.nan)
+                        except:
+                            Z_mesh[i, j] = np.nan
+                
+                # Statistische Verarbeitung für bessere Visualisierung
+                Z_finite = Z_mesh[np.isfinite(Z_mesh)]
+                if len(Z_finite) > 0:
+                    z_mean = np.mean(Z_finite)
+                    z_std = np.std(Z_finite)
+                
+                    # Begrenze extreme Werte für bessere Visualisierung
+                    lower_bound = max(np.min(Z_finite), z_mean - 5*z_std)
+                    upper_bound = min(np.max(Z_finite), z_mean + 5*z_std)
+                
+                    Z_mesh_mod = np.copy(Z_mesh)
+                    Z_mesh_mod[(Z_mesh_mod < lower_bound) & np.isfinite(Z_mesh_mod)] = lower_bound
+                    Z_mesh_mod[(Z_mesh_mod > upper_bound) & np.isfinite(Z_mesh_mod)] = upper_bound
+                    Z_mesh = Z_mesh_mod
+                
+                fig3d.add_trace(go.Surface(
+                    x=X_mesh, y=Y_mesh, z=Z_mesh,
+                    colorscale='viridis',
+                    opacity=0.8,
+                    showscale=True
+                ))
+                
+                # Füge Pfade hinzu
+                for i, algo in enumerate(selected_algos):
+                    result = st.session_state.optimierungsergebnisse[algo]
+                    path = result.get("history", [])
+                
+                    if path:
+                        path_x = [p[0] for p in path]
+                        path_y = [p[1] for p in path]
+                
+                        # Berechne z-Werte für den Pfad
+                        path_z = []
+                        for p in path:
+                            try:
+                                result = current_func_obj(p)
+                                if 'value' in result and np.isfinite(result['value']):
+                                    path_z.append(result['value'])
+                                else:
+                                    path_z.append(None)
+                            except:
+                                path_z.append(None)
+                
+                        # Zeichne Pfad
+                        fig3d.add_trace(go.Scatter3d(
+                            x=path_x, y=path_y, z=path_z,
+                            mode='lines+markers',
+                            line=dict(color=colors[i % len(colors)], width=5),
+                            marker=dict(size=4, color=colors[i % len(colors)]),
+                            name=algo
+                        ))
+                
+                # Füge bekannte Minima hinzu, falls vorhanden
+                if minima:
+                    min_x = [m[0] for m in minima]
+                    min_y = [m[1] for m in minima]
+                    min_z = []
+                    for m in minima:
+                        try:
+                            z = current_func_obj(np.array(m))['value']
+                            min_z.append(z)
+                        except:
+                            min_z.append(None)
+                
+                    fig3d.add_trace(go.Scatter3d(
+                        x=min_x, y=min_y, z=min_z,
+                        mode='markers',
+                        marker=dict(size=8, color='white', symbol='x', line=dict(color='black', width=2)),
+                        name='Bekannte Minima'
+                    ))
+                
+                # Layout-Konfiguration
+                fig3d.update_layout(
+                    title=f"3D-Vergleich: {selected_function_for_comparison}",
+                    scene=dict(
+                        xaxis_title='X',
+                        yaxis_title='Y',
+                        zaxis_title='Funktionswert',
+                        aspectratio=dict(x=1, y=1, z=0.8)
+                    ),
+                    margin=dict(l=0, r=0, b=0, t=30),
+                    legend=dict(
+                        x=0.02,
+                        y=0.98,
+                        bordercolor="Black",
+                        borderwidth=1
+                    )
+                )
+                
+                st.plotly_chart(fig3d, use_container_width=True, height=600)
 
 
 with tabs[3]: # Info & Hilfe
