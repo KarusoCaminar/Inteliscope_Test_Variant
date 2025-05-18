@@ -652,46 +652,45 @@ with tabs[0]:
                     plt.close(fig3d)
     
     with col2:
-    # --- col2: Optimierungsvisualisierung, rechte Spalte ---
-    
-    if current_func_obj:
-        plot2d_container = st.container()
-        controls2d_container = st.container()
-    
-        # Parameter für Matplotlib Plot
-        if 'contour_levels' not in st.session_state:
-            st.session_state.contour_levels = contour_levels
-        if 'zoom_factor' not in st.session_state:
-            st.session_state.zoom_factor = 1.0
-        if 'show_grid_2d' not in st.session_state:
-            st.session_state.show_grid_2d = False
-        if 'center_x' not in st.session_state:
-            st.session_state.center_x = np.mean(x_range)
-        if 'center_y' not in st.session_state:
-            st.session_state.center_y = np.mean(y_range)
-    
-        with controls2d_container:
-            st.markdown("""
-            <div style="background-color: #6a2c91; padding: 8px; border-radius: 8px; margin-bottom: 10px;">
-                <h4 style="color: white; margin: 0;">2D Ansicht Steuerung</h4>
-            </div>
-            """, unsafe_allow_html=True)
-    
-            cols = st.columns(3)
-            with cols[0]:
-                st.session_state.contour_levels = st.slider("Konturlinien", 10, 100, 
-                                                          st.session_state.contour_levels, 
-                                                          step=5,
-                                                          key="contour_slider")
-            with cols[1]:
-                st.session_state.zoom_factor = st.slider("Zoom", 0.5, 5.0, 
-                                                       st.session_state.zoom_factor, 
-                                                       step=0.1,
-                                                       key="zoom_slider")
-            with cols[2]:
-                st.session_state.show_grid_2d = st.checkbox("Gitter anzeigen", 
-                                                          st.session_state.show_grid_2d, 
-                                                          key="grid_checkbox")
+        # --- col2: Optimierungsvisualisierung, rechte Spalte ---
+        if current_func_obj:
+            plot2d_container = st.container()
+            controls2d_container = st.container()
+        
+            # Parameter für Matplotlib Plot
+            if 'contour_levels' not in st.session_state:
+                st.session_state.contour_levels = contour_levels
+            if 'zoom_factor' not in st.session_state:
+                st.session_state.zoom_factor = 1.0
+            if 'show_grid_2d' not in st.session_state:
+                st.session_state.show_grid_2d = False
+            if 'center_x' not in st.session_state:
+                st.session_state.center_x = np.mean(x_range)
+            if 'center_y' not in st.session_state:
+                st.session_state.center_y = np.mean(y_range)
+        
+            with controls2d_container:
+                st.markdown("""
+                <div style="background-color: #6a2c91; padding: 8px; border-radius: 8px; margin-bottom: 10px;">
+                    <h4 style="color: white; margin: 0;">2D Ansicht Steuerung</h4>
+                </div>
+                """, unsafe_allow_html=True)
+        
+                cols = st.columns(3)
+                with cols[0]:
+                    st.session_state.contour_levels = st.slider("Konturlinien", 10, 100, 
+                                                              st.session_state.contour_levels, 
+                                                              step=5,
+                                                              key="contour_slider")
+                with cols[1]:
+                    st.session_state.zoom_factor = st.slider("Zoom", 0.5, 5.0, 
+                                                           st.session_state.zoom_factor, 
+                                                           step=0.1,
+                                                           key="zoom_slider")
+                with cols[2]:
+                    st.session_state.show_grid_2d = st.checkbox("Gitter anzeigen", 
+                                                              st.session_state.show_grid_2d, 
+                                                              key="grid_checkbox")
 
         # --- 2D-Konturplot ---
         with st.container():
@@ -757,7 +756,7 @@ with tabs[0]:
             st.pyplot(fig2d)
             plt.close(fig2d)
 
-            # Direkte Optimierung ausführen (ohne run_simple_optimization)
+            # Funktionen für die Optimierung direkt implementieren
             selected_optimizer = iopt.OPTIMIZERS[selected_algorithm_key]
             
             # Callback und Parameter sollten zuvor erzeugt worden sein:
@@ -782,7 +781,6 @@ with tabs[0]:
             
             # Metainformationen für Statusberichterstattung
             info_text = "Optimierung gestartet"
-
             
             # Zeichne Konturplot
             cp = ax_live.contourf(X, Y, Z, levels=30, cmap='viridis', alpha=0.7)
@@ -802,8 +800,8 @@ with tabs[0]:
             
             # Zeige Live-Plot
             live_plot_placeholder.pyplot(fig_live)
-    
-    return callback, path_history, value_history
+            
+            return callback, path_history, value_history
     
     # Bereich für Optimierungsergebnisse
     st.markdown("""
@@ -1140,12 +1138,16 @@ with tabs[0]:
                                 for i, point in enumerate(result_data["history"]):
                                     try:
                                         params = np.array(point)
-                                        res = current_func_obj(params) if callable(current_func_obj) else current_func(params)
+                                        if callable(current_func_obj):
+                                            res = current_func_obj(params)
+                                        else:
+                                            print(f"Fehler: current_func_obj ist nicht aufrufbar an Punkt {algo_name} (Iteration {i}).")
+                                            res = {'value': np.nan}
                                         path_z[i] = res.get('value', np.nan)
-                                        if np.isfinite(path_z[i]) and np.isfinite(z_min) and np.isfinite(z_max):
-                                            path_z[i] = min(max(path_z[i], z_min), z_max)
-                                    except Exception:
+                                    except Exception as e:
+                                        print(f"Fehler bei Z-Berechnung für Pfadpunkt {i} von {algo_name}: {e}")
                                         path_z[i] = np.nan
+            
                                 # Startpunkt
                                 ax3d.scatter([path_x[0]], [path_y[0]], [path_z[0]],
                                              color='blue', marker='o', s=100, label='Start')
@@ -1175,7 +1177,7 @@ with tabs[0]:
                     plt.close(fig3d)
     
                     # Zeige gespeicherte Ergebnisse
-                    elif current_func_obj and st.session_state.optimierungsergebnisse:
+                    if current_func_obj and st.session_state.optimierungsergebnisse:
                         # Filtere Ergebnisse für die aktuelle Funktion
                         current_function_results = {
                             algo: result for algo, result in st.session_state.optimierungsergebnisse.items()
