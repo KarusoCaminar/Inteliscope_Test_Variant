@@ -872,7 +872,7 @@ with tabs[0]:
             momentum_value = 0.9  # Standard-Momentum-Wert
             
             # Wähle Algorithmusparameter basierend auf der Funktion
-            if selected_algorithm == "GD_Simple_LS":
+            if selected_algorithm_key == "GD_Simple_LS":
                 # Gradient Descent mit Liniensuche
                 max_iter = optimizer_params.get("max_iter", 500)
                 learning_rate = optimizer_params.get("initial_t_ls", 0.01)
@@ -882,7 +882,7 @@ with tabs[0]:
                     learning_rate = 0.005
                     use_adaptive_lr = True
                     
-            elif selected_algorithm == "GD_Momentum":
+            elif selected_algorithm_key == "GD_Momentum":
                 # Gradient Descent mit Momentum
                 max_iter = optimizer_params.get("max_iter", 300)
                 learning_rate = optimizer_params.get("learning_rate", 0.01)
@@ -910,7 +910,7 @@ with tabs[0]:
             # Status-Info anzeigen
             st.write(f"""
             **Optimierungseinstellungen:**
-            - Algorithmus: {algorithm_options[selected_algorithm]}
+            - Algorithmus: {algorithm_options[selected_algorithm_key]}
             - Lernrate: {learning_rate}
             - Max. Iterationen: {max_iter}
             - Momentum: {'Ein' if use_momentum else 'Aus'} ({momentum_value if use_momentum else 'N/A'})
@@ -940,7 +940,7 @@ with tabs[0]:
             status            = result.status
             
             # Speichere Ergebnisse
-            algorithm_display_name = f"{algorithm_options[selected_algorithm]}"
+            algorithm_display_name = f"{algorithm_options[selected_algorithm_key]}"
             
             st.session_state.optimierungsergebnisse[algorithm_display_name] = {
                 "function": st.session_state.ausgewählte_funktion,
