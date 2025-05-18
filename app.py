@@ -755,9 +755,6 @@ with tabs[0]:
             # Plot anzeigen
             st.pyplot(fig2d)
             plt.close(fig2d)
-
-            # Funktionen für die Optimierung direkt implementieren
-            selected_optimizer = iopt.OPTIMIZERS[selected_algorithm_key]
             
             # Callback und Parameter sollten zuvor erzeugt worden sein:
             
