@@ -925,12 +925,15 @@ with tabs[0]:
             
             # Direkte Optimierung ausführen via io.OPTIMIZERS
             optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
-
+            
             # Visualization‑Tracker erzeugen (Callback + Speicher für Pfad & Werte)
             visualization_callback, path_hist, loss_hist = create_visualization_tracker(
                 current_func_obj, x_range, y_range, contour_levels, minima
             )
-        
+            import inspect
+            st.write("Optimizer:", optimizer_fn)
+            st.write("Funktions-Signatur:", inspect.signature(optimizer_fn))
+            st.write("Übergebene Parameter:", optimizer_params)
             # Optimierung starten
             result = optimizer_fn(
                 current_func_obj,   # func (positional)
