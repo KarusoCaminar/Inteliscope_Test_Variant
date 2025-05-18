@@ -922,7 +922,12 @@ with tabs[0]:
             - Momentum: {'Ein' if use_momentum else 'Aus'} ({momentum_value if use_momentum else 'N/A'})
             - Adaptive Lernrate: {'Ein' if use_adaptive_lr else 'Aus'}
             """)
-            
+
+            import inspect
+            st.write("Optimizer:", optimizer_fn)
+            st.write("Funktions-Signatur:", inspect.signature(optimizer_fn))
+            st.write("Übergebene Parameter:", optimizer_params)
+            st.write("Callback-Type:", type(visualization_callback))
             # Direkte Optimierung ausführen via io.OPTIMIZERS
             optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
             
@@ -930,10 +935,7 @@ with tabs[0]:
             visualization_callback, path_hist, loss_hist = create_visualization_tracker(
                 current_func_obj, x_range, y_range, contour_levels, minima
             )
-            import inspect
-            st.write("Optimizer:", optimizer_fn)
-            st.write("Funktions-Signatur:", inspect.signature(optimizer_fn))
-            st.write("Übergebene Parameter:", optimizer_params)
+    
             # Optimierung starten
             result = optimizer_fn(
                 current_func_obj,   # func (positional)
