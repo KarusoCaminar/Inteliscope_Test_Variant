@@ -306,6 +306,7 @@ tabs = st.tabs(["Optimierungsvisualisierung", "Funktionseditor", "Ergebnisvergle
 with tabs[0]:
     # Einheitliche Initialisierung für die aktuelle Funktion und Metainfos
     current_func_obj = None
+    start_point = None
     x_range = (-5, 5)
     y_range = (-5, 5)
     contour_levels = 30
@@ -756,6 +757,20 @@ with tabs[0]:
             st.pyplot(fig2d)
             plt.close(fig2d)
 
+            # Validierungsfunktion
+            def validate_state():
+                if current_func_obj is None:
+                    st.error("Funktion nicht gefunden oder geladen. Bitte Funktion auswählen!")
+                    st.stop()
+                if start_point is None:
+                    st.error("Startpunkt nicht gesetzt! Bitte wählen oder generieren Sie einen Startwert.")
+                    st.stop()
+            
+            # Vor dem Optimierer-Aufruf: Validierung und Debug
+            print("DEBUG: current_func_obj =", current_func_obj)
+            print("DEBUG: start_point =", start_point)
+            validate_state()
+            
             # Definiere erlaubte Parameter je Optimierer
             GD_PARAMS = ["max_iter", "step_norm_tol", "func_impr_tol", "initial_t_ls", "callback"]
             MOMENTUM_PARAMS = ["learning_rate", "momentum_beta", "max_iter", "grad_norm_tol", "callback"]
@@ -764,16 +779,6 @@ with tabs[0]:
             # Funktionsobjekt für den Optimierer auswählen
             optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
             
-            # WICHTIG: Erst prüfen, ob current_func_obj existiert!
-            print("DEBUG: current_func_obj =", current_func_obj)
-            print("DEBUG: start_point =", start_point)
-            if current_func_obj is None:
-                st.error("Funktion nicht gefunden oder geladen. Bitte Funktion auswählen!")
-                st.stop()
-            if start_point is None:
-                st.error("Startpunkt nicht gesetzt! Bitte wählen oder generieren Sie einen Startwert.")
-                st.stop()
-                
             # Parameter passend filtern und Optimierer aufrufen
             if selected_algorithm_key == "GD_Simple_LS":
                 params = {k: v for k, v in optimizer_params.items() if k in GD_PARAMS}
@@ -945,6 +950,20 @@ with tabs[0]:
             - Adaptive Lernrate: {'Ein' if use_adaptive_lr else 'Aus'}
             """)
             
+            # Validierungsfunktion
+            def validate_state():
+                if current_func_obj is None:
+                    st.error("Funktion nicht gefunden oder geladen. Bitte Funktion auswählen!")
+                    st.stop()
+                if start_point is None:
+                    st.error("Startpunkt nicht gesetzt! Bitte wählen oder generieren Sie einen Startwert.")
+                    st.stop()
+            
+            # Vor dem Optimierer-Aufruf: Validierung und Debug
+            print("DEBUG: current_func_obj =", current_func_obj)
+            print("DEBUG: start_point =", start_point)
+            validate_state()
+            
             # Definiere erlaubte Parameter je Optimierer
             GD_PARAMS = ["max_iter", "step_norm_tol", "func_impr_tol", "initial_t_ls", "callback"]
             MOMENTUM_PARAMS = ["learning_rate", "momentum_beta", "max_iter", "grad_norm_tol", "callback"]
@@ -952,20 +971,6 @@ with tabs[0]:
             
             # Funktionsobjekt für den Optimierer auswählen
             optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
-            
-            # Debug-Ausgaben direkt nach der Zuweisung (optional)
-            print("optimizer_fn =", optimizer_fn)
-            print("type:", type(optimizer_fn))
-            
-            # WICHTIG: Erst prüfen, ob current_func_obj existiert!
-            print("DEBUG: current_func_obj =", current_func_obj)
-            print("DEBUG: start_point =", start_point)
-            if current_func_obj is None:
-                st.error("Funktion nicht gefunden oder geladen. Bitte Funktion auswählen!")
-                st.stop()
-            if start_point is None:
-                st.error("Startpunkt nicht gesetzt! Bitte wählen oder generieren Sie einen Startwert.")
-                st.stop()
             
             # Parameter passend filtern und Optimierer aufrufen
             if selected_algorithm_key == "GD_Simple_LS":
