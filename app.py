@@ -795,7 +795,7 @@ with tabs[0]:
             
             # Erstelle Callback-Funktion
             visualization_callback, path_history, value_history = create_visualization_tracker(
-                current_func_obj, x_range, y_range
+                current_func_obj, x_range, y_range, contour_levels, minima
             )
             
             # Grid-Suche für einen geeigneten Startpunkt
