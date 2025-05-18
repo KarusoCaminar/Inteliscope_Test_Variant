@@ -921,11 +921,6 @@ with tabs[0]:
             # Optional: Noch ein Alias, falls du selected_optimizer brauchst
             selected_optimizer = optimizer_fn
             
-            # Visualization‑Tracker erzeugen (Callback + Speicher für Pfad & Werte)
-            visualization_callback, path_hist, loss_hist = create_visualization_tracker(
-                current_func_obj, x_range, y_range, contour_levels, minima
-            )
-        
             # Ergebnisse extrahieren
             best_x, best_history, best_loss_history, status = result
             
