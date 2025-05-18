@@ -760,7 +760,8 @@ with tabs[0]:
             print(selected_algorithm_key)
             print(iopt.OPTIMIZERS_EXTENDED.keys())
             print(iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key])
-
+            print("Typ und Inhalt von result:", type(result), result)
+            
             # Funktionen für die Optimierung direkt implementieren
             selected_optimizer = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
             
