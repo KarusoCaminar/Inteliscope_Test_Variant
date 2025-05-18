@@ -965,17 +965,29 @@ with tabs[0]:
             col1, col2, col3, col4 = st.columns(4)
                 
             with col1:
-                st.metric("Startpunkt", f"[{best_history[0][0]:.3f}, {best_history[0][1]:.3f}]" if best_history else "N/A")
-                
+                if best_history and len(best_history) > 0 and len(best_history[0]) > 1:
+                    st.metric("Startpunkt", f"[{best_history[0][0]:.3f}, {best_history[0][1]:.3f}]")
+                else:
+                    st.metric("Startpunkt", "N/A")
+            
             with col2:
-                st.metric("Endpunkt", f"[{best_x[0]:.3f}, {best_x[1]:.3f}]" if best_x is not None else "N/A")
-                
+                if best_x is not None and len(best_x) > 1:
+                    st.metric("Endpunkt", f"[{best_x[0]:.3f}, {best_x[1]:.3f}]")
+                else:
+                    st.metric("Endpunkt", "N/A")
+            
             with col3:
-                st.metric("Funktionswert", f"{best_loss_history[-1]:.6f}" if best_loss_history else "N/A")
-                
+                if best_loss_history:
+                    st.metric("Funktionswert", f"{best_loss_history[-1]:.6f}")
+                else:
+                    st.metric("Funktionswert", "N/A")
+            
             with col4:
-                st.metric("Iterationen", f"{len(best_loss_history)-1}" if best_loss_history else "N/A")
-                
+                if best_loss_history:
+                    st.metric("Iterationen", f"{len(best_loss_history)-1}")
+                else:
+                    st.metric("Iterationen", "N/A")
+            
             st.markdown(f"**Status:** {status}")
                 
             # Zeige Optimierungspfad als 3D-Visualisierung mit erweiterten Kontrollen
@@ -1197,19 +1209,31 @@ with tabs[0]:
         
         with col1:
             history = result_data.get("history", [])
-            st.metric("Startpunkt", f"[{history[0][0]:.3f}, {history[0][1]:.3f}]" if history else "N/A")
+            if history and len(history[0]) > 1:
+                st.metric("Startpunkt", f"[{history[0][0]:.3f}, {history[0][1]:.3f}]")
+            else:
+                st.metric("Startpunkt", "N/A")
         
         with col2:
             best_x = result_data.get("best_x", None)
-            st.metric("Endpunkt", f"[{best_x[0]:.3f}, {best_x[1]:.3f}]" if best_x is not None else "N/A")
+            if best_x is not None and len(best_x) > 1:
+                st.metric("Endpunkt", f"[{best_x[0]:.3f}, {best_x[1]:.3f}]")
+            else:
+                st.metric("Endpunkt", "N/A")
         
         with col3:
             loss_history = result_data.get("loss_history", [])
-            st.metric("Funktionswert", f"{loss_history[-1]:.6f}" if loss_history else "N/A")
+            if loss_history:
+                st.metric("Funktionswert", f"{loss_history[-1]:.6f}")
+            else:
+                st.metric("Funktionswert", "N/A")
         
         with col4:
             loss_history = result_data.get("loss_history", [])
-            st.metric("Iterationen", f"{len(loss_history)-1}" if loss_history else "N/A")
+            if loss_history:
+                st.metric("Iterationen", f"{len(loss_history)-1}")
+            else:
+                st.metric("Iterationen", "N/A")
         
         st.markdown(f"**Status:** {result_data.get('status', 'Unbekannt')}")
         
