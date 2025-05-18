@@ -757,54 +757,6 @@ with tabs[0]:
             st.pyplot(fig2d)
             plt.close(fig2d)
 
-            # Initialisiere Momentum-Variable
-            velocity = np.zeros_like(x)
-            
-            # Initialisiere Parameter für adaptive Lernrate
-            best_value = value
-            patience = 5
-            patience_counter = 0
-            lr_reduce_factor = 0.5
-            lr_increase_factor = 1.1
-            min_lr = 1e-6
-            current_lr = learning_rate
-            
-            # Metainformationen für Statusberichterstattung
-            info_text = "Optimierung gestartet"
-            
-            # Zeichne Konturplot
-            cp = ax_live.contourf(X, Y, Z, levels=30, cmap='viridis', alpha=0.7)
-            
-            # Zeichne Pfadverlauf
-            if len(path_history) > 0:
-                path_x = [p[0] for p in path_history]
-                path_y = [p[1] for p in path_history]
-                ax_live.plot(path_x, path_y, 'r-o', linewidth=2, markersize=4)
-                ax_live.plot(path_x[0], path_y[0], 'bo', markersize=8, label='Start')
-                ax_live.plot(path_x[-1], path_y[-1], 'g*', markersize=10, label='Aktuell')
-            
-            ax_live.set_xlim(x_range)
-            ax_live.set_ylim(y_range)
-            ax_live.set_title(f"Optimierungspfad (Iteration {iteration+1})")
-            ax_live.legend()
-            
-            # Zeige Live-Plot
-            live_plot_placeholder.pyplot(fig_live)
-            
-        #return callback, path_history, value_history
-    
-    # Bereich für Optimierungsergebnisse
-    st.markdown("""
-    <div style="background: linear-gradient(90deg, #4d8bf0, #6a2c91); padding: 12px; border-radius: 8px;">
-        <h3 style="color: white; margin: 0;">Optimierungsergebnisse</h3>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # --- Live-Tracking & Info-Boxen-Container ---
-    live_tracking_container = st.container()
-    info_box_container = st.container()
-    results_container = st.container()
-    
     # Führe Optimierung aus, wenn der Button geklickt wurde
     if start_optimization and current_func_obj:
         with st.spinner("Optimierung läuft..."):
