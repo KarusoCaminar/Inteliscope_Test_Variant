@@ -877,25 +877,39 @@ with tabs[0]:
                 current_func_obj, x_range, y_range
             )
             
-            # Wähle Startpunkt mit hohem Funktionswert
             # Grid-Suche für einen geeigneten Startpunkt
             start_x = np.linspace(x_range[0], x_range[1], 10)
             start_y = np.linspace(y_range[0], y_range[1], 10)
             highest_value = float('-inf')
-            start_point = np.array([0.0, 0.0])
+            best_point = None
             
             for x in start_x:
                 for y in start_y:
                     try:
                         point = np.array([x, y])
                         result = current_func_obj(point)
-                        if 'value' in result and result['value'] > highest_value:
+                        if 'value' in result and np.isfinite(result['value']) and result['value'] > highest_value:
                             highest_value = result['value']
-                            start_point = point.copy()
-                    except:
+                            best_point = point.copy()
+                    except Exception as e:
                         continue
             
+            # Setze Startpunkt auf das beste gefundene, oder auf den Mittelpunkt des Bereichs als Fallback
+            if best_point is not None:
+                start_point = best_point
+            else:
+                start_point = np.array([(x_range[0] + x_range[1]) / 2, (y_range[0] + y_range[1]) / 2])
+                st.warning("Automatischer Startpunkt konnte nicht ermittelt werden, verwende Mittelpunkt des Bereichs.")
+            
             st.write(f"Starte Optimierung von Punkt: [{start_point[0]:.4f}, {start_point[1]:.4f}]")
+            
+            # Optional: Zusätzlicher Check auf Gültigkeit
+            try:
+                result = current_func_obj(start_point)
+                if not ("value" in result and np.isfinite(result["value"])):
+                    st.error("Der Startpunkt liefert keinen gültigen Funktionswert – bitte Bereich oder Funktion überprüfen!")
+            except Exception as e:
+                st.error(f"Der Startpunkt ist ungültig für die Funktion: {e}")
             
             # Führe Optimierung mit gewählten Parametern durch
             # Konfiguriere Optimierungsparameter basierend auf der ausgewählten Funktion und dem Algorithmus
