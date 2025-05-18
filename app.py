@@ -469,7 +469,7 @@ with tabs[0]:
                     if minima is not None:
                         for m in minima:
                             try:
-                                z_val = current_func(np.array(m))['value']
+                                z_val = current_func_obj(np.array(m))['value']
                                 ax3d.scatter([m[0]], [m[1]], [z_val], color='red', marker='+', s=120, 
                                             linewidths=2, label='Bekanntes Minimum')
                             except:
@@ -717,7 +717,7 @@ with tabs[0]:
                 for j in range(X.shape[1]):
                     try:
                         params = np.array([X[i, j], Y[i, j]])
-                        result = current_func(params)
+                        result = current_func_obj(params)
                         Z[i, j] = result['value']
                     except:
                         Z[i, j] = np.nan
@@ -801,7 +801,7 @@ with tabs[0]:
             # Zeige Live-Plot
             live_plot_placeholder.pyplot(fig_live)
             
-            return callback, path_history, value_history
+        #return callback, path_history, value_history
     
     # Bereich für Optimierungsergebnisse
     st.markdown("""
@@ -855,7 +855,7 @@ with tabs[0]:
                 for y in start_y:
                     try:
                         point = np.array([x, y])
-                        result = current_func(point)
+                        result = current_func_obj(point)
                         if 'value' in result and result['value'] > highest_value:
                             highest_value = result['value']
                             start_point = point.copy()
