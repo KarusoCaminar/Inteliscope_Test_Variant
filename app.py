@@ -756,10 +756,6 @@ with tabs[0]:
             st.pyplot(fig2d)
             plt.close(fig2d)
 
-            # Parameter Filterung
-            print("optimizer_fn =", optimizer_fn)
-            print("type:", type(optimizer_fn))
-
             # Definiere erlaubte Parameter je Optimierer
             GD_PARAMS = ["max_iter", "step_norm_tol", "func_impr_tol", "initial_t_ls", "callback"]
             MOMENTUM_PARAMS = ["learning_rate", "momentum_beta", "max_iter", "grad_norm_tol", "callback"]
@@ -778,6 +774,8 @@ with tabs[0]:
             
             # Funktionen für die Optimierung direkt implementieren
             selected_optimizer = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
+            print("optimizer_fn =", optimizer_fn)
+            print("type:", type(optimizer_fn))
             
             # Resultate extrahieren         
             if not isinstance(result, (list, tuple)) or len(result) != 4:
