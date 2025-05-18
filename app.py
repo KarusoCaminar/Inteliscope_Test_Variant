@@ -755,7 +755,9 @@ with tabs[0]:
             # Plot anzeigen
             st.pyplot(fig2d)
             plt.close(fig2d)
-            
+
+            print("Result is:", result)
+            print("Type:", type(result), "Length:", len(result) if hasattr(result, "__len__") else "n/a")
             # Callback und Parameter sollten zuvor erzeugt worden sein:
 
             # Funktionen für die Optimierung direkt implementieren
