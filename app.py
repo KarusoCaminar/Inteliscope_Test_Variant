@@ -793,7 +793,8 @@ with tabs[0]:
                 """, unsafe_allow_html=True)
                 info_placeholder = st.empty()
 
-            # Robust: minima IMMER in Liste von Listen verwandeln
+            '''
+            #Robust: minima IMMER in Liste von Listen verwandeln
             if minima is None:
                 minima = []
             elif hasattr(minima, "values"):  # z. B. pandas DataFrame
@@ -810,7 +811,8 @@ with tabs[0]:
             st.write("y_range:", y_range)
             st.write("contour_levels:", contour_levels)
             st.write("minima:", minima)
-      
+            '''
+            
             # Erstelle Callback-Funktion
             visualization_callback, path_history, value_history = create_visualization_tracker(
                 current_func_obj, x_range, y_range, contour_levels, minima
