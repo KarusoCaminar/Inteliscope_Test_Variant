@@ -49,12 +49,18 @@ def _create_function_from_sympy(sympy_expr, name="", tooltip="", x_range=(-5, 5)
         }
         
         if minima is not None:
-            # Immer als Liste von Listen zurückgeben!
-            if isinstance(minima, (list, tuple)):
+            # Wenn minima schon Liste von Listen ist, belasse es so!
+            if (
+                isinstance(minima, (list, tuple))
+                and all(isinstance(m, (list, tuple)) and not isinstance(m, dict) for m in minima)
+            ):
                 result['minima'] = [list(m) for m in minima]
             else:
-                result['minima'] = [list(minima)]
-            
+                # Fange dict oder einzelne Werte ab
+                try:
+                    result['minima'] = [list(minima)]
+                except Exception:
+                    result['minima'] = [[minima]]     
         return result
     
     return wrapper
