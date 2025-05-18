@@ -62,7 +62,6 @@ def _create_function_from_sympy(sympy_expr, name="", tooltip="", x_range=(-5, 5)
                 except Exception:
                     result['minima'] = [[minima]]     
         return result
-    
     return wrapper
 
 # Rosenbrock-Funktion (a=1, b=100)
