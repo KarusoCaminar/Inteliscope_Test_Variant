@@ -693,7 +693,7 @@ with tabs[0]:
                                                           key="grid_checkbox")
 
         # --- 2D-Konturplot ---
-        with st.container():
+        with plot2d_container:
             fig2d = plt.figure(figsize=(8, 6))
             ax2d = fig2d.add_subplot(111)
             
