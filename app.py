@@ -928,6 +928,7 @@ with tabs[0]:
             st.write("Funktions-Signatur:", inspect.signature(optimizer_fn))
             st.write("Übergebene Parameter:", optimizer_params)
             st.write("Callback-Type:", type(visualization_callback))
+            
             # Direkte Optimierung ausführen via io.OPTIMIZERS
             optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
             
