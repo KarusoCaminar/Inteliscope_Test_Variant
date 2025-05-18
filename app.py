@@ -759,10 +759,7 @@ with tabs[0]:
             # Callback und Parameter sollten zuvor erzeugt worden sein:
             
             # Resultate extrahieren
-            best_x = result.x_best              # oder result.x, je nach Rückgabe
-            best_history = result.history       # Pfad aller x_i
-            best_loss_history = result.loss_history  # Funktionswerte
-            status = result.status              # Status-String
+            best_x, best_history, best_loss_history, status = result           
             
             # Initialisiere Momentum-Variable
             velocity = np.zeros_like(x)
@@ -931,10 +928,7 @@ with tabs[0]:
             )
         
             # Ergebnisse extrahieren
-            best_x            = result.x_best
-            best_history      = result.history
-            best_loss_history = result.loss_history
-            status            = result.status
+            best_x, best_history, best_loss_history, status = result
             
             # Speichere Ergebnisse
             algorithm_display_name = f"{algorithm_options[selected_algorithm_key]}"
