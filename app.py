@@ -1457,6 +1457,10 @@ with tabs[0]:
         plt.close(fig3d_prev)
 
 with tabs[1]:
+    # Einheitliche Initialisierung für die aktuelle Funktion und Metainfos
+    current_func_obj = None
+    start_point = None
+    
     st.markdown("## Funktionseditor")
     st.markdown("""
     Hier kannst du eigene mathematische Funktionen definieren und testen. Verwende `x` und `y` als Variablen.
@@ -1619,6 +1623,10 @@ with tabs[1]:
                     st.error(f"Fehler beim Anzeigen der Funktion: {e}")
 
 with tabs[2]:
+    # Einheitliche Initialisierung für die aktuelle Funktion und Metainfos
+    current_func_obj = None
+    start_point = None
+
     st.markdown("## Ergebnisvergleich")
     
     if not st.session_state.optimierungsergebnisse:
@@ -1928,6 +1936,10 @@ with tabs[2]:
 
 
 with tabs[3]: # Info & Hilfe
+    # Einheitliche Initialisierung für die aktuelle Funktion und Metainfos
+    current_func_obj = None
+    start_point = None
+    
     st.header("Info & Hilfe")
     st.markdown("""
     ### Über IntelliScope Explorer
