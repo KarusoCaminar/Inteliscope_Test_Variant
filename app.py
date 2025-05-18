@@ -651,7 +651,7 @@ with tabs[0]:
                     st.pyplot(fig3d)
                     plt.close(fig3d)
                     
-    with col2:
+with col2:
         # --- col2: Optimierungsvisualisierung, rechte Spalte ---
         if current_func_obj:
             plot2d_container = st.container()
