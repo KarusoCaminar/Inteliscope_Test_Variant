@@ -923,13 +923,13 @@ with tabs[0]:
             - Adaptive Lernrate: {'Ein' if use_adaptive_lr else 'Aus'}
             """)
             
-            # Direkte Optimierung ausführen via io.OPTIMIZERS
-            optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
-        
             # Visualization‑Tracker erzeugen (Callback + Speicher für Pfad & Werte)
             visualization_callback, path_hist, loss_hist = create_visualization_tracker(
                 current_func_obj, x_range, y_range, contour_levels, minima
             )
+
+            # Direkte Optimierung ausführen via io.OPTIMIZERS
+            optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
         
             # Optimierung starten
             result = optimizer_fn(
