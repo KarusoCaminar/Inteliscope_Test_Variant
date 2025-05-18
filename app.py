@@ -929,6 +929,21 @@ with tabs[0]:
             st.write("Übergebene Parameter:", optimizer_params)
             st.write("Callback-Type:", type(visualization_callback))
             
+            # Definiere erlaubte Parameter je Optimierer
+            GD_PARAMS = ["max_iter", "step_norm_tol", "func_impr_tol", "initial_t_ls", "callback"]
+            MOMENTUM_PARAMS = ["learning_rate", "momentum_beta", "max_iter", "grad_norm_tol", "callback"]
+            ADAM_PARAMS = ["learning_rate", "beta1", "beta2", "epsilon", "max_iter", "grad_norm_tol", "callback"]
+            
+            if selected_algorithm_key == "GD_Simple_LS":
+                params = {k: v for k, v in optimizer_params.items() if k in GD_PARAMS}
+                result = optimizer_fn(current_func_obj, start_point, **params)
+            elif selected_algorithm_key == "GD_Momentum":
+                params = {k: v for k, v in optimizer_params.items() if k in MOMENTUM_PARAMS}
+                result = optimizer_fn(current_func_obj, start_point, **params)
+            elif selected_algorithm_key == "Adam":
+                params = {k: v for k, v in optimizer_params.items() if k in ADAM_PARAMS}
+                result = optimizer_fn(current_func_obj, start_point, **params)
+            
             # Direkte Optimierung ausführen via io.OPTIMIZERS
             optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
             
