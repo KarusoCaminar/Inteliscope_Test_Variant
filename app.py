@@ -761,7 +761,14 @@ with tabs[0]:
             MOMENTUM_PARAMS = ["learning_rate", "momentum_beta", "max_iter", "grad_norm_tol", "callback"]
             ADAM_PARAMS = ["learning_rate", "beta1", "beta2", "epsilon", "max_iter", "grad_norm_tol", "callback"]
             
-            # Funktionen für die Optimierung direkt implementieren
+            # Funktionsobjekt für den Optimierer auswählen
+            optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
+            
+            # Debug-Ausgaben direkt nach der Zuweisung
+            print("optimizer_fn =", optimizer_fn)
+            print("type:", type(optimizer_fn))
+            
+            # Parameter passend filtern und Optimierer aufrufen
             if selected_algorithm_key == "GD_Simple_LS":
                 params = {k: v for k, v in optimizer_params.items() if k in GD_PARAMS}
                 result = optimizer_fn(current_func_obj, start_point, **params)
@@ -772,11 +779,9 @@ with tabs[0]:
                 params = {k: v for k, v in optimizer_params.items() if k in ADAM_PARAMS}
                 result = optimizer_fn(current_func_obj, start_point, **params)
             
-            # Funktionen für die Optimierung direkt implementieren
-            selected_optimizer = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
-            print("optimizer_fn =", optimizer_fn)
-            print("type:", type(optimizer_fn))
-            
+            # Optional: Noch ein Alias, falls du selected_optimizer brauchst
+            selected_optimizer = optimizer_fn
+                        
             # Resultate extrahieren         
             if not isinstance(result, (list, tuple)) or len(result) != 4:
                 st.error(f"Optimizer returned an unexpected result: {result} (type: {type(result)})")
@@ -784,7 +789,6 @@ with tabs[0]:
             else:
                 best_x, best_history, best_loss_history, status = result
 
-            
             # Initialisiere Momentum-Variable
             velocity = np.zeros_like(x)
             
