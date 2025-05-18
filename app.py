@@ -363,8 +363,8 @@ with tabs[0]:
             # Erstelle 3D-Plot mit Matplotlib und füge Kontrollen hinzu
             if current_func_obj:
                 # Erstelle Container für 3D Plot und Kontrollen
-                plot3d_container = tainer()
-                controls3d_container = tainer()
+                plot3d_container = st.container()
+                controls3d_container = st.container()
                 
                 # Parameter für Matplotlib Plot
                 if 'elev_3d' not in st.session_state:
@@ -475,75 +475,163 @@ with tabs[0]:
                             except:
                                 pass
 
-                    # Zeichne die Top-10 Optimierungspfade (aus der neuen App-Logik, falls gewünscht)
-                    paths_to_plot = []
-                    if "optimierungsergebnisse" in st.session_state and st.session_state.optimierungsergebnisse:
-                        # Nur Läufe für die aktuell ausgewählte Funktion filtern
-                        runs = [
-                            r for r in st.session_state.optimierungsergebnisse.values()
-                            if r.get('function') == st.session_state.ausgewählte_funktion and 'history' in r
-                        ]
-                        # Nach finalem Loss sortieren (kleinster Wert = beste Lösung)
-                        runs_sorted = sorted(
-                            runs,
-                            key=lambda r: r.get('loss_history', [float('inf')])[-1]
+                    # --- Code zum Plotten der Top 10 Pfade ---
+                    
+                    # Definieren, wie viele beste Pfade geplottet werden sollen
+                    num_best_paths_to_plot = 10
+                    
+                    # Überprüfen, ob Optimierungsergebnisse vorhanden sind und die aktuelle Funktion ausgewählt ist
+                    if 'optimierungsergebnisse' in st.session_state and st.session_state.optimierungsergebnisse \
+                       and 'ausgewählte_funktion' in st.session_state and st.session_state.ausgewählte_funktion:
+                    
+                        # Ergebnisse für die aktuelle Funktion filtern, die eine Historie und einen endlichen 'value' haben
+                        # Wir benötigen den algo_name für die Beschriftung, daher über items() iterieren
+                        current_function_results_with_value = []
+                        for algo_name, result_data in st.session_state.optimierungsergebnisse.items():
+                            # Prüfen, ob result_data ein Dictionary ist
+                            if isinstance(result_data, dict) and \
+                               result_data.get("function") == st.session_state.ausgewählte_funktion and \
+                               "history" in result_data and result_data["history"] and \
+                               "value" in result_data and np.isfinite(result_data["value"]):
+                                # Speichern als (algo_name, result_data) Tupel
+                                current_function_results_with_value.append((algo_name, result_data))
+                            # Optional: Fall behandeln, dass result_data eine Liste von Läufen für einen Multistart-Algo ist
+                            # Das würde eine andere Logik erfordern, um die Liste zu "flachklopfen" und jeden Lauf zu verarbeiten.
+                            # Der aktuelle Code geht davon aus, dass jedes Element in optimierungsergebnisse ein Einzellauf-Ergebnis ist.
+                    
+                    
+                        # Ergebnisse nach ihrem finalen Zielfunktionswert ("value") sortieren - Annahme: Minimierung
+                        # Einen grossen endlichen Wert oder np.inf für fehlende/NaN-Werte im Sortier-Key verwenden
+                        sorted_results_by_value = sorted(
+                            current_function_results_with_value,
+                            key=lambda item: item[1].get("value", np.inf) # Sortieren nach dem 'value'-Schlüssel
                         )
-                        # Top 10 extrahieren
-                        for run in runs_sorted[:10]:
-                            hist = run.get('history')
-                            if hist:
-                                paths_to_plot.append(np.array(hist))
                     
-                    for idx, path in enumerate(paths_to_plot):
-                        xs, ys = path[:, 0], path[:, 1]
-                        zs = []
-                        for x, y in zip(xs, ys):
-                            try:
-                                val = current_func_obj(np.array([x, y]))['value']
-                                val_clipped = np.clip(val, z_min, z_max) if np.isfinite(z_min) and np.isfinite(z_max) else val
-                                zs.append(val_clipped)
-                            except Exception:
-                                zs.append(np.nan)
-                        ax3d.plot(xs, ys, zs, marker='o', linewidth=1, markersize=3,
-                                  alpha=0.6, label=f'Pfad {idx+1}' if idx < 1 else None)  # Nur 1x label für Legende
+                        # Die Top N besten Ergebnisse auswählen
+                        best_n_results = sorted_results_by_value[:num_best_paths_to_plot]
                     
-                    # Zeige den neuesten Einzelpfad prominent wie in der alten App
-                    if st.session_state.optimierungsergebnisse:
-                        current_function_results = {
-                            algo: result for algo, result in st.session_state.optimierungsergebnisse.items()
-                            if result["function"] == st.session_state.ausgewählte_funktion and "history" in result
-                        }
-                        if current_function_results:
-                            sorted_results = sorted(
-                                current_function_results.items(),
-                                key=lambda x: x[1].get("timestamp", 0),
-                                reverse=True
-                            )
-                            # Neuestes Ergebnis nehmen
-                            algo_name, result_data = sorted_results[0]
-                            if "history" in result_data and result_data["history"]:
-                                path_points = np.array(result_data["history"])
-                                path_x = path_points[:, 0]
-                                path_y = path_points[:, 1]
-                                path_z = np.zeros(len(path_points))
-                                for i, point in enumerate(result_data["history"]):
-                                    try:
-                                        params = np.array(point)
-                                        res = current_func_obj(params) if callable(current_func_obj) else current_func(params)
-                                        path_z[i] = res.get('value', np.nan)
-                                        if np.isfinite(path_z[i]) and np.isfinite(z_min) and np.isfinite(z_max):
-                                            path_z[i] = min(max(path_z[i], z_min), z_max)
-                                    except Exception:
-                                        path_z[i] = np.nan
-                                # Startpunkt
-                                ax3d.scatter([path_x[0]], [path_y[0]], [path_z[0]],
-                                             color='blue', marker='o', s=100, label='Start')
-                                # Endpunkt
-                                ax3d.scatter([path_x[-1]], [path_y[-1]], [path_z[-1]],
-                                             color='green', marker='*', s=100, label='Ende')
-                                # Pfad einzeichnen
-                                ax3d.plot(path_x, path_y, path_z, 'r-o',
-                                          linewidth=2, markersize=3, label='Optimierungspfad')
+                        # Überprüfen, ob es beste Pfade zum Plotten gibt
+                        if best_n_results:
+                            # Definieren einer Colormap für die Farben der anderen Pfade
+                            # Die Colormap sollte N-1 Farben liefern, da der beste Pfad rot ist
+                            cmap = plt.cm.get_cmap('viridis', max(1, len(best_n_results) -1)) # mind. 1 Farbe, auch wenn nur 1 Pfad da ist
+                    
+                            # Schleife durch die besten N Ergebnisse und plotten jedes Pfades
+                            for rank, (algo_name, result_data) in enumerate(best_n_results):
+                    
+                                history = result_data.get("history")
+                                if history:
+                                    path_points = np.array(history)
+                    
+                                    # Sicherstellen, dass path_points mindestens 2 Dimensionen (für x und y) und mind. 1 Punkt hat
+                                    if path_points.ndim < 2 or path_points.shape[1] < 2 or path_points.shape[0] < 1:
+                                         print(f"Warnung: Historie für {algo_name} hat ungültige Dimensionen oder ist leer.")
+                                         continue # Diesen Pfad überspringen
+                    
+                                    path_x = path_points[:, 0]
+                                    path_y = path_points[:, 1]
+                                    path_z = np.zeros(len(path_points)) # Z-Array initialisieren
+                    
+                                    # Z-Werte für jeden Punkt in der Pfad-Historie berechnen
+                                    valid_path_indices = [] # Indices mit endlichen Z-Werten für die Linienzeichnung
+                                    for i, point in enumerate(history): # Über originale Liste iterieren für Point-Format-Konsistenz
+                                        try:
+                                            params = np.array(point)
+                                            # Robuste Methode zum Aufrufen der Zielfunktion verwenden
+                                            if callable(current_func_obj):
+                                                res = current_func_obj(params)
+                                            elif callable(current_func):
+                                                 res = current_func(params)
+                                            else:
+                                                # Fallback oder Fehlerbehandlung, wenn keine gültige Funktion gefunden
+                                                print(f"Fehler: Optimierungsfunktion nicht gefunden oder nicht aufrufbar für {algo_name}.")
+                                                path_z[i] = np.nan # NaN zuweisen, wenn Funktion fehlt
+                                                continue # Berechnung für diesen Punkt überspringen
+                    
+                                            z_value = res.get('value', np.nan)
+                                            path_z[i] = z_value
+                    
+                                            # Z-Clipping basierend auf dem Surface-Bereich anwenden
+                                            # Sicherstellen, dass z_min und z_max endlich sind, bevor geclippt wird
+                                            if np.isfinite(path_z[i]) and np.isfinite(z_min) and np.isfinite(z_max):
+                                                 path_z[i] = min(max(path_z[i], z_min), z_max)
+                    
+                                            if np.isfinite(path_z[i]): # Nur endliche Z-Werte für die Linienzeichnung berücksichtigen
+                                                valid_path_indices.append(i)
+                    
+                                        except Exception as e:
+                                            # Potenzielle Fehler bei der Funktionsauswertung für Pfad-Punkte behandeln
+                                            print(f"Fehler bei Z-Berechnung für Pfadpunkt {i} von {algo_name}: {e}")
+                                            path_z[i] = np.nan # NaN bei Fehler zuweisen
+                    
+                                    # --- Plotting für den aktuellen Pfad ---
+                    
+                                    # Bestimmen der Farbe und des Stils basierend auf dem Rang
+                                    if rank == 0: # Der beste Pfad (Rang 0)
+                                        path_color = 'red'
+                                        path_linewidth = 3
+                                        path_markersize_line = 5
+                                        start_marker_size = 120
+                                        end_marker_size = 140
+                                        path_alpha = 1.0
+                                        label_suffix = " (Best)"
+                                    else: # Die anderen Top 9 Pfade
+                                        # Farbe aus der Colormap nehmen (rank-1, da der 0-te Index rot ist)
+                                        path_color = cmap(rank -1)
+                                        path_linewidth = 2
+                                        path_markersize_line = 3
+                                        start_marker_size = 80
+                                        end_marker_size = 100
+                                        path_alpha = 0.7
+                                        label_suffix = ""
+                    
+                    
+                                    # Startpunkt plotten (erster Punkt in der Historie)
+                                    # path_points[0, 0], path_points[0, 1] für x, y verwenden
+                                    # path_z[0] für z verwenden (könnte NaN sein, wenn Berechnung fehlschlug)
+                                    # Einen Z-Wert für den Marker zuweisen, auch wenn die Berechnung fehlschlug, z.B. z_min
+                                    start_x, start_y = path_points[0, 0], path_points[0, 1]
+                                    start_z_plot = path_z[0] if np.isfinite(path_z[0]) else (z_min if np.isfinite(z_min) else 0) # Geclipptes z oder z_min/0 verwenden
+                    
+                                    ax3d.scatter([start_x], [start_y], [start_z_plot],
+                                                 color=path_color, # Farbe je nach Rang
+                                                 marker='o', s=start_marker_size, alpha=path_alpha,
+                                                 label='_nolegend_') # Einzelne Startpunkte nicht in die Legende aufnehmen
+                    
+                                    # Endpunkt plotten (letzter Punkt in der Historie)
+                                    end_x, end_y = path_points[-1, 0], path_points[-1, 1]
+                                    end_z_plot = path_z[-1] if np.isfinite(path_z[-1]) else (z_min if np.isfinite(z_min) else 0) # Geclipptes z oder z_min/0 verwenden
+                    
+                                    ax3d.scatter([end_x], [end_y], [end_z_plot],
+                                                 color=path_color, # Farbe je nach Rang
+                                                 marker='*', s=end_marker_size, alpha=path_alpha + 0.1 if path_alpha <= 0.9 else 1.0, # Endpunkt ggf. etwas sichtbarer
+                                                 label='_nolegend_') # Einzelne Endpunkte nicht in die Legende aufnehmen
+                    
+                                    # Pfad-Linie plotten (nur Punkte mit gültigen Z-Werten verbinden)
+                                    if len(valid_path_indices) > 1: # Mindestens 2 gültige Punkte für eine Linie erforderlich
+                                        valid_path_x = path_x[valid_path_indices]
+                                        valid_path_y = path_y[valid_path_indices]
+                                        valid_path_z_clipped = path_z[valid_path_indices] # Bereits geclippt
+                    
+                                        # Linie für diesen Pfad plotten
+                                        ax3d.plot(valid_path_x, valid_path_y, valid_path_z_clipped,
+                                                  color=path_color, # Farbe je nach Rang
+                                                  linewidth=path_linewidth, markersize=path_markersize_line, alpha=path_alpha,
+                                                  label=f'{algo_name} (Wert: {result_data["value"]:.4f}){label_suffix}') # Label für die Legende
+                    
+                    
+                            # Eine einzige Legende für die Pfade hinzufügen
+                            ax3d.legend()
+                    
+                        # else:
+                            # Optional: Eine Nachricht anzeigen, wenn keine gültigen Ergebnisse für die aktuelle Funktion gefunden wurden
+                            st.info("Keine Optimierungsergebnisse mit Historie und finalem Wert für die aktuelle Funktion gefunden.")
+                            pass # Oder eine Nachricht hinzufügen
+                    
+                    # else:
+                        # Optional: Eine Nachricht anzeigen, wenn session state leer ist oder Funktion nicht ausgewählt
+                        st.info("Bitte führen Sie zuerst eine Optimierung durch.")
+                        pass # Oder eine Nachricht hinzufügen
                     
                     # Legende & Colorbar
                     handles, labels = ax3d.get_legend_handles_labels()
@@ -567,8 +655,8 @@ with tabs[0]:
     # --- col2: Optimierungsvisualisierung, rechte Spalte ---
     
     if current_func_obj:
-        plot2d_container = tainer()
-        controls2d_container = tainer()
+        plot2d_container = st.container()
+        controls2d_container = st.container()
     
         # Parameter für Matplotlib Plot
         if 'contour_levels' not in st.session_state:
@@ -606,7 +694,7 @@ with tabs[0]:
                                                           key="grid_checkbox")
 
         # --- 2D-Konturplot ---
-        with tainer():
+        with st.container():
             fig2d = plt.figure(figsize=(8, 6))
             ax2d = fig2d.add_subplot(111)
             
@@ -725,9 +813,9 @@ with tabs[0]:
     """, unsafe_allow_html=True)
     
     # --- Live-Tracking & Info-Boxen-Container ---
-    live_tracking_container = tainer()
-    info_box_container = tainer()
-    results_container = tainer()
+    live_tracking_container = st.container()
+    info_box_container = st.container()
+    results_container = st.container()
     
     # Führe Optimierung aus, wenn der Button geklickt wurde
     if start_optimization and current_func_obj:
