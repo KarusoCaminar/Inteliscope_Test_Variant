@@ -49,7 +49,11 @@ def _create_function_from_sympy(sympy_expr, name="", tooltip="", x_range=(-5, 5)
         }
         
         if minima is not None:
-            result['minima'] = minima
+            # Immer als Liste von Listen zurückgeben!
+            if isinstance(minima, (list, tuple)):
+                result['minima'] = [list(m) for m in minima]
+            else:
+                result['minima'] = [list(minima)]
             
         return result
     
@@ -102,7 +106,7 @@ def rastrigin_func(x_input: np.ndarray) -> Dict[str, Any]:
                   "Herausforderung für Optimierungsalgorithmen dar.",
         'x_range': (-5.12, 5.12),
         'y_range': (-5.12, 5.12), # Assuming 2D for default y_range
-        'minima': [(0.0,) * n] # Global minimum at origin for n dimensions
+        'minima': [[0.0,] * n] # Global minimum at origin for n dimensions
     }
 
 # Ackley-Funktion
@@ -147,7 +151,7 @@ def ackley_func(x_input: np.ndarray) -> Dict[str, Any]:
                   "nahezu flache äußere Region und einen tiefen Trichter in der Mitte.",
         'x_range': (-5, 5),
         'y_range': (-5, 5), # Assuming 2D for default y_range
-        'minima': [(0.0,) * n] # Global minimum at origin for n dimensions
+        'minima': [[0.0,] * n] # Global minimum at origin for n dimensions
     }
 
 # Schwefel-Funktion
@@ -193,7 +197,7 @@ def schwefel_func(x_input: np.ndarray) -> Dict[str, Any]:
                   "die weit vom globalen Minimum entfernt liegen.",
         'x_range': (-500, 500),
         'y_range': (-500, 500), # Assuming 2D for default y_range
-        'minima': [(420.9687,) * n] # Global minimum for n dimensions
+        'minima': [[420.9687,] * n] # Global minimum for n dimensions
     }
 
 # Eggcrate-Funktion (einfaches Beispiel mit vielen lokalen Minima)
