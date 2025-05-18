@@ -757,6 +757,18 @@ with tabs[0]:
             st.pyplot(fig2d)
             plt.close(fig2d)
 
+    # Bereich für Optimierungsergebnisse
+    st.markdown("""
+    <div style="background: linear-gradient(90deg, #4d8bf0, #6a2c91); padding: 12px; border-radius: 8px;">
+        <h3 style="color: white; margin: 0;">Optimierungsergebnisse</h3>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # --- Live-Tracking & Info-Boxen-Container ---
+    live_tracking_container = st.container()
+    info_box_container = st.container()
+    results_container = st.container()
+    
     # Führe Optimierung aus, wenn der Button geklickt wurde
     if start_optimization and current_func_obj:
         with st.spinner("Optimierung läuft..."):
