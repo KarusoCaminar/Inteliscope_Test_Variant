@@ -650,10 +650,7 @@ with tabs[0]:
                     # Zeige Plot
                     st.pyplot(fig3d)
                     plt.close(fig3d)
-print(selected_algorithm_key)
-print(iopt.OPTIMIZERS.keys())
-print(iopt.OPTIMIZERS[selected_algorithm_key])
-            
+                    
     with col2:
         # --- col2: Optimierungsvisualisierung, rechte Spalte ---
         if current_func_obj:
@@ -760,6 +757,9 @@ print(iopt.OPTIMIZERS[selected_algorithm_key])
             plt.close(fig2d)
 
             # Callback und Parameter sollten zuvor erzeugt worden sein:
+            print(selected_algorithm_key)
+            print(iopt.OPTIMIZERS.keys())
+            print(iopt.OPTIMIZERS[selected_algorithm_key])
 
             # Funktionen für die Optimierung direkt implementieren
             selected_optimizer = iopt.OPTIMIZERS[selected_algorithm_key]
