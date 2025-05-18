@@ -758,11 +758,11 @@ with tabs[0]:
 
             # Callback und Parameter sollten zuvor erzeugt worden sein:
             print(selected_algorithm_key)
-            print(iopt.OPTIMIZERS.keys())
-            print(iopt.OPTIMIZERS[selected_algorithm_key])
+            print(iopt.OPTIMIZERS_EXTENDED.keys())
+            print(iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key])
 
             # Funktionen für die Optimierung direkt implementieren
-            selected_optimizer = iopt.OPTIMIZERS[selected_algorithm_key]
+            selected_optimizer = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
             
             # Resultate extrahieren
             best_x, best_history, best_loss_history, status = result           
@@ -918,7 +918,7 @@ with tabs[0]:
             """)
             
             # Direkte Optimierung ausführen via io.OPTIMIZERS
-            optimizer_fn = iopt.OPTIMIZERS[selected_algorithm_key]
+            optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
         
             # Visualization‑Tracker erzeugen (Callback + Speicher für Pfad & Werte)
             visualization_callback, path_hist, loss_hist = create_visualization_tracker(
