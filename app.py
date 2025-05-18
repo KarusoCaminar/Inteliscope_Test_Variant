@@ -25,13 +25,11 @@ def create_visualization_tracker(func, x_range, y_range, contour_levels, minima)
     """
     path_history = []
     value_history = []
-    
-    # Callback-Funktion, die den Pfad aufzeichnet
+
     def callback(iteration, x, value, grad_norm, message):
         path_history.append(x.copy())
         value_history.append(value)
-        
-        # Status-Nachricht im Info-Bereich anzeigen
+
         info_text = f"""
         **Iteration:** {iteration+1}
         **Aktuelle Position:** [{x[0]:.4f}, {x[1]:.4f}]
@@ -39,19 +37,13 @@ def create_visualization_tracker(func, x_range, y_range, contour_levels, minima)
         **Gradientennorm:** {grad_norm:.6f}
         """
         info_placeholder.markdown(info_text)
-        
-        # Nur alle 5 Iterationen visualisieren, um Performance zu verbessern
+
         if iteration % 5 == 0 or iteration < 5:
-            # 2D Konturplot mit aktuellem Pfad
             fig_live = plt.figure(figsize=(8, 4))
             ax_live = fig_live.add_subplot(111)
-            
-            # Gitter für Konturplot
             X, Y = np.meshgrid(np.linspace(x_range[0], x_range[1], 50), 
-                             np.linspace(y_range[0], y_range[1], 50))
+                               np.linspace(y_range[0], y_range[1], 50))
             Z = np.zeros_like(X)
-            
-            # Berechne Funktionswerte auf dem Gitter
             for i in range(X.shape[0]):
                 for j in range(X.shape[1]):
                     try:
@@ -59,7 +51,23 @@ def create_visualization_tracker(func, x_range, y_range, contour_levels, minima)
                         Z[i, j] = result.get('value', np.nan)
                     except:
                         Z[i, j] = np.nan
+            # Minima einzeichnen
+            if minima:
+                for m in minima:
+                    ax_live.plot(m[0], m[1], 'X', color='red', markersize=8, markeredgecolor='black')
+            # Pfad einzeichnen
+            if len(path_history) > 0:
+                path_arr = np.array(path_history)
+                ax_live.plot(path_arr[:, 0], path_arr[:, 1], 'ro-', linewidth=2, markersize=3)
+            plt.colorbar(ax_live.contourf(X, Y, Z, levels=contour_levels, cmap='viridis', alpha=0.8), ax=ax_live)
+            ax_live.set_xlabel('X')
+            ax_live.set_ylabel('Y')
+            ax_live.set_title('Live-Optimierung')
+            live_plot_placeholder.pyplot(fig_live)
+            plt.close(fig_live)
 
+    return callback, path_history, value_history
+    
 # Seitenkonfiguration mit verbesserten Einstellungen
 st.set_page_config(
     page_title="IntelliScope Explorer",
@@ -793,10 +801,11 @@ with tabs[0]:
                 """, unsafe_allow_html=True)
                 info_placeholder = st.empty()
 
-            print("minima:", minima, type(minima))
+            # Debug-Ausgabe zu minima mit st.write
+            st.write("minima:", minima, type(minima))
             if minima is not None:
-                for m in minima:
-                    print("min-item:", m, type(m))
+                for i, m in enumerate(minima):
+                    st.write(f"minima[{i}] =", m, type(m))
         
             # Erstelle Callback-Funktion
             visualization_callback, path_history, value_history = create_visualization_tracker(
