@@ -19,6 +19,7 @@ import visualization_suite_v3 as vs
 import improved_optimizer as iopt  # Renamed to avoid conflict with 'io'
 import data_manager as dm
 
+print("hello mFK")
 def create_visualization_tracker(func, x_range, y_range, contour_levels, minima):
     """
     Erstellt einen Tracker für den Optimierungspfad
