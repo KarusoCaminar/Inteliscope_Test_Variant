@@ -757,49 +757,6 @@ with tabs[0]:
             st.pyplot(fig2d)
             plt.close(fig2d)
 
-            # Validierungsfunktion
-            def validate_state():
-                if current_func_obj is None:
-                    st.error("Funktion nicht gefunden oder geladen. Bitte Funktion auswählen!")
-                    st.stop()
-                if start_point is None:
-                    st.error("Startpunkt nicht gesetzt! Bitte wählen oder generieren Sie einen Startwert.")
-                    st.stop()
-            
-            # Vor dem Optimierer-Aufruf: Validierung und Debug
-            print("DEBUG: current_func_obj =", current_func_obj)
-            print("DEBUG: start_point =", start_point)
-            validate_state()
-            
-            # Definiere erlaubte Parameter je Optimierer
-            GD_PARAMS = ["max_iter", "step_norm_tol", "func_impr_tol", "initial_t_ls", "callback"]
-            MOMENTUM_PARAMS = ["learning_rate", "momentum_beta", "max_iter", "grad_norm_tol", "callback"]
-            ADAM_PARAMS = ["learning_rate", "beta1", "beta2", "epsilon", "max_iter", "grad_norm_tol", "callback"]
-            
-            # Funktionsobjekt für den Optimierer auswählen
-            optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
-            
-            # Parameter passend filtern und Optimierer aufrufen
-            if selected_algorithm_key == "GD_Simple_LS":
-                params = {k: v for k, v in optimizer_params.items() if k in GD_PARAMS}
-                result = optimizer_fn(current_func_obj, start_point, **params)
-            elif selected_algorithm_key == "GD_Momentum":
-                params = {k: v for k, v in optimizer_params.items() if k in MOMENTUM_PARAMS}
-                result = optimizer_fn(current_func_obj, start_point, **params)
-            elif selected_algorithm_key == "Adam":
-                params = {k: v for k, v in optimizer_params.items() if k in ADAM_PARAMS}
-                result = optimizer_fn(current_func_obj, start_point, **params)
-            
-            # Optional: Noch ein Alias, falls du selected_optimizer brauchst
-            selected_optimizer = optimizer_fn
-                        
-            # Resultate extrahieren         
-            if not isinstance(result, (list, tuple)) or len(result) != 4:
-                st.error(f"Optimizer returned an unexpected result: {result} (type: {type(result)})")
-                st.stop()
-            else:
-                best_x, best_history, best_loss_history, status = result
-
             # Initialisiere Momentum-Variable
             velocity = np.zeros_like(x)
             
