@@ -27,8 +27,10 @@ def multi_start_optimization(
         seed: Seed für den Zufallszahlengenerator
         
     Returns:
-        best_x: Der beste gefundene Punkt
-        all_results: Liste aller Optimierungsergebnisse (x_opt, x_history, loss_history, status) für jeden Start
+        x_opt: Der beste gefundene Punkt (ndarray)
+        x_history: Liste aller besuchten Punkte des besten Laufs
+        loss_history: Liste aller Funktionswerte des besten Laufs
+        status: Statusmeldung des besten Laufsebnisse (x_opt, x_history, loss_history, status) für jeden Start
     """
     if seed is not None:
         np.random.seed(seed)
@@ -77,8 +79,13 @@ def multi_start_optimization(
         # Füge einen Dummy-Eintrag hinzu, damit die Visualisierung nicht abstürzt
         all_results.append((best_x, [best_x], [0.0], "Fallback-Ergebnis"))
     
-    return best_x, all_results
-
+    if all_results:
+        # best_run = (x_opt, x_history, loss_history, status) mit minimalem End-Loss
+        best_run = min(all_results, key=lambda tup: tup[2][-1] if tup[2] else float('inf'))
+        return best_run
+    else:
+        return best_x, [best_x], [0.0], "Kein Ergebnis"
+    
 def adaptive_multistart_optimization(
     obj_fun: Callable, 
     optimizer_func: Callable, 
@@ -103,8 +110,10 @@ def adaptive_multistart_optimization(
         seed: Seed für den Zufallszahlengenerator
         
     Returns:
-        best_x: Der beste gefundene Punkt
-        all_results: Liste aller Optimierungsergebnisse
+        x_opt: Der beste gefundene Punkt (ndarray)
+        x_history: Liste aller besuchten Punkte des besten Laufs
+        loss_history: Liste aller Funktionswerte des besten Laufs
+        status: Statusmeldung des besten Laufsergebnisse
     """
     if seed is not None:
         np.random.seed(seed)
@@ -186,7 +195,12 @@ def adaptive_multistart_optimization(
         # Wenn kein bester Punkt gefunden wurde, nehme den ersten
         best_x = all_results[0][0]
         
-    return best_x, all_results
+    if all_results:
+        best_run = min(all_results, key=lambda tup: tup[2][-1] if tup[2] else float('inf'))
+        return best_run
+    else:
+        return best_x, [best_x], [0.0], "Kein Ergebnis"
+
 
 def random_restart_gd(
     obj_fun: Callable,
@@ -280,13 +294,13 @@ OPTIMIZERS_EXTENDED = {
         obj_fun, 
         lambda f, x: oa.gradientDescent(f, x, **kwargs),
         n_starts=5
-    )[0],
+    ),
     "GD_Adaptive_Multi": lambda obj_fun, initial_x, **kwargs: adaptive_multistart_optimization(
         obj_fun,
         lambda f, x: oa.gradientDescent(f, x, **kwargs),
         initial_starts=3,
         max_starts=10
-    )[0],
+    ),
     "GD_Random_Restart": random_restart_gd
 }
 
@@ -328,7 +342,7 @@ def create_multi_start_optimizer(base_optimizer, n_starts=5, x_range=(-5, 5), y_
     """Erzeugt einen Multi-Start-Optimierer mit dem angegebenen Basisoptimierer."""
     return lambda obj_fun, initial_x: multi_start_optimization(
         obj_fun, base_optimizer, n_starts, x_range, y_range
-    )[0]
+    )
 
 def create_adaptive_multi_start(base_optimizer, initial_starts=5, max_starts=20, 
                               convergence_threshold=1e-6, x_range=(-5, 5), y_range=(-5, 5)):
@@ -336,4 +350,4 @@ def create_adaptive_multi_start(base_optimizer, initial_starts=5, max_starts=20,
     return lambda obj_fun, initial_x: adaptive_multistart_optimization(
         obj_fun, base_optimizer, initial_starts, max_starts, 
         convergence_threshold, x_range, y_range
-    )[0]
+    )
