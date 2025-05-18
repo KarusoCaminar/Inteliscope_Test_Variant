@@ -951,14 +951,6 @@ with tabs[0]:
             visualization_callback, path_hist, loss_hist = create_visualization_tracker(
                 current_func_obj, x_range, y_range, contour_levels, minima
             )
-    
-            # Optimierung starten
-            result = optimizer_fn(
-                current_func_obj,   # func (positional)
-                start_point,        # initial_x (positional)
-                callback=visualization_callback,  # nur wenn der Optimierer `callback` kennt!
-                **optimizer_params  # nur Parameter, die wirklich in der Signatur vorkommen!
-            )
         
             # Ergebnisse extrahieren
             best_x, best_history, best_loss_history, status = result
