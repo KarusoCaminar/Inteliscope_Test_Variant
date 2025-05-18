@@ -650,7 +650,7 @@ with tabs[0]:
                     # Zeige Plot
                     st.pyplot(fig3d)
                     plt.close(fig3d)
-    
+            
     with col2:
         # --- col2: Optimierungsvisualisierung, rechte Spalte ---
         if current_func_obj:
@@ -990,392 +990,392 @@ with tabs[0]:
                 </div>
                 """, unsafe_allow_html=True)
                     
-                    # 3D Plot Kontrollen
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        elev_3d_result = st.slider("Elevation", 0, 90, 30, key="elev_result")
-                    with col2:
-                        azim_3d_result = st.slider("Azimuth", 0, 360, 45, key="azim_result")
-                    with col3:
-                        dist_3d_result = st.slider("Zoom", 5, 20, 10, key="dist_result")
-                    with col4:
-                        resolution = st.slider("Auflösung", 30, 100, 50, key="resolution_result")
-                    
-                    # Buttons für Standardansichten
-                    btn_cols = st.columns(5)
-                    if btn_cols[0].button("Von oben", key="view_top", 
-                                       type="primary", 
-                                       use_container_width=True):
-                        elev_3d_result = 90
-                        azim_3d_result = 0
-                    if btn_cols[1].button("Von vorne", key="view_front", 
-                                       type="primary", 
-                                       use_container_width=True):
-                        elev_3d_result = 0
-                        azim_3d_result = 0
-                    if btn_cols[2].button("Von rechts", key="view_right", 
-                                       type="primary", 
-                                       use_container_width=True):
-                        elev_3d_result = 0
-                        azim_3d_result = 90
-                    if btn_cols[3].button("Isometrisch", key="view_iso", 
-                                       type="primary", 
-                                       use_container_width=True):
-                        elev_3d_result = 30
-                        azim_3d_result = 45
-                    if btn_cols[4].button("Von links", key="view_left", 
-                                       type="primary", 
-                                       use_container_width=True):
-                        elev_3d_result = 0
-                        azim_3d_result = 270
-                        
-                    # Zeichne 3D-Oberfläche mit Matplotlib
-                    fig3d_result = plt.figure(figsize=(10, 8))
-                    ax3d_result = fig3d_result.add_subplot(111, projection='3d')
-                    
-                    # Erzeuge Gitter für 3D-Plot
-                    x = np.linspace(x_range[0], x_range[1], resolution)
-                    y = np.linspace(y_range[0], y_range[1], resolution)
-                    X, Y = np.meshgrid(x, y)
-                    Z = np.zeros_like(X)
-                    
-                    # Berechne Funktionswerte auf dem Gitter
-                    for i in range(X.shape[0]):
-                        for j in range(X.shape[1]):
-                            try:
-                                params = np.array([X[i, j], Y[i, j]])
-                                result = current_func_obj(params)
-                                Z[i, j] = result.get('value', np.nan)
-                            except:
-                                Z[i, j] = np.nan
-                    
-                    # Statistische Verarbeitung für bessere Visualisierung
-                    Z_finite = Z[np.isfinite(Z)]
-                    if len(Z_finite) > 0:
-                        z_mean = np.mean(Z_finite)
-                        z_std = np.std(Z_finite)
-                        z_min = max(np.min(Z_finite), z_mean - 5*z_std)
-                        z_max = min(np.max(Z_finite), z_mean + 5*z_std)
-                        
-                        # Extremwerte begrenzen
-                        Z_plot = np.copy(Z)
-                        Z_plot[(Z_plot < z_min) & np.isfinite(Z_plot)] = z_min
-                        Z_plot[(Z_plot > z_max) & np.isfinite(Z_plot)] = z_max
-                    else:
-                        Z_plot = Z
-                    
-                    # Zeichne 3D-Oberfläche
-                    surf = ax3d.plot_surface(X, Y, Z_plot, cmap='viridis',
-                                             linewidth=0, antialiased=True, alpha=0.8)
-                    
-                    # Achsenbeschriftungen
-                    ax3d.set_xlabel('X')
-                    ax3d.set_ylabel('Y')
-                    ax3d.set_zlabel('Funktionswert')
-                    ax3d.set_title(f"3D-Oberfläche: {st.session_state.ausgewählte_funktion}")
-                    
-                    # Zeige bekannte Minima, falls vorhanden
-                    if minima is not None:
-                        for m in minima:
-                            try:
-                                z_val = current_func_obj(np.array(m))['value']
-                                ax3d.scatter([m[0]], [m[1]], [z_val], color='red', marker='+', s=120,
-                                             linewidths=2, label='Bekanntes Minimum')
-                            except Exception:
-                                pass
-                    
-                    # Zeichne die Top-20 Optimierungspfade (aus der neuen App-Logik, falls gewünscht)
-                    paths_to_plot = []
-                    if "optimierungsergebnisse" in st.session_state and st.session_state.optimierungsergebnisse:
-                        # Nur Läufe für die aktuell ausgewählte Funktion filtern
-                        runs = [
-                            r for r in st.session_state.optimierungsergebnisse.values()
-                            if r.get('function') == st.session_state.ausgewählte_funktion and 'history' in r
-                        ]
-                        # Nach finalem Loss sortieren (kleinster Wert = beste Lösung)
-                        runs_sorted = sorted(
-                            runs,
-                            key=lambda r: r.get('loss_history', [float('inf')])[-1]
-                        )
-                        # Top 20 extrahieren
-                        for run in runs_sorted[:20]:
-                            hist = run.get('history')
-                            if hist:
-                                paths_to_plot.append(np.array(hist))
-                    
-                    for idx, path in enumerate(paths_to_plot):
-                        xs, ys = path[:, 0], path[:, 1]
-                        zs = []
-                        for x, y in zip(xs, ys):
-                            try:
-                                val = current_func_obj(np.array([x, y]))['value']
-                                val_clipped = np.clip(val, z_min, z_max) if np.isfinite(z_min) and np.isfinite(z_max) else val
-                                zs.append(val_clipped)
-                            except Exception:
-                                zs.append(np.nan)
-                        ax3d.plot(xs, ys, zs, marker='o', linewidth=1, markersize=3,
-                                  alpha=0.6, label=f'Pfad {idx+1}' if idx < 1 else None)  # Nur 1x label für Legende
-                    
-                    # Zeige den neuesten Einzelpfad prominent wie in der alten App
-                    if st.session_state.optimierungsergebnisse:
-                        current_function_results = {
-                            algo: result for algo, result in st.session_state.optimierungsergebnisse.items()
-                            if result["function"] == st.session_state.ausgewählte_funktion and "history" in result
-                        }
-                        if current_function_results:
-                            sorted_results = sorted(
-                                current_function_results.items(),
-                                key=lambda x: x[1].get("timestamp", 0),
-                                reverse=True
-                            )
-                            # Neuestes Ergebnis nehmen
-                            algo_name, result_data = sorted_results[0]
-                            if "history" in result_data and result_data["history"]:
-                                path_points = np.array(result_data["history"])
-                                path_x = path_points[:, 0]
-                                path_y = path_points[:, 1]
-                                path_z = np.zeros(len(path_points))
-                                for i, point in enumerate(result_data["history"]):
-                                    try:
-                                        params = np.array(point)
-                                        if callable(current_func_obj):
-                                            res = current_func_obj(params)
-                                        else:
-                                            print(f"Fehler: current_func_obj ist nicht aufrufbar an Punkt {algo_name} (Iteration {i}).")
-                                            res = {'value': np.nan}
-                                        path_z[i] = res.get('value', np.nan)
-                                    except Exception as e:
-                                        print(f"Fehler bei Z-Berechnung für Pfadpunkt {i} von {algo_name}: {e}")
-                                        path_z[i] = np.nan
+            # 3D Plot Kontrollen
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                elev_3d_result = st.slider("Elevation", 0, 90, 30, key="elev_result")
+            with col2:
+                azim_3d_result = st.slider("Azimuth", 0, 360, 45, key="azim_result")
+            with col3:
+                dist_3d_result = st.slider("Zoom", 5, 20, 10, key="dist_result")
+            with col4:
+                resolution = st.slider("Auflösung", 30, 100, 50, key="resolution_result")
             
-                                # Startpunkt
-                                ax3d.scatter([path_x[0]], [path_y[0]], [path_z[0]],
-                                             color='blue', marker='o', s=100, label='Start')
-                                # Endpunkt
-                                ax3d.scatter([path_x[-1]], [path_y[-1]], [path_z[-1]],
-                                             color='green', marker='*', s=100, label='Ende')
-                                # Pfad einzeichnen
-                                ax3d.plot(path_x, path_y, path_z, 'r-o',
-                                          linewidth=2, markersize=3, label='Optimierungspfad')
-                    
-                    # Legende & Colorbar
-                    handles, labels = ax3d.get_legend_handles_labels()
-                    by_label = dict(zip(labels, handles))
-                    if by_label:
-                        ax3d.legend(by_label.values(), by_label.keys(), loc='upper right')
-                    fig3d.colorbar(surf, ax=ax3d, shrink=0.5, aspect=5)
-                    
-                    # Kameraeinstellungen
-                    ax3d.view_init(elev=st.session_state.elev_3d, azim=st.session_state.azim_3d)
+            # Buttons für Standardansichten
+            btn_cols = st.columns(5)
+            if btn_cols[0].button("Von oben", key="view_top", 
+                               type="primary", 
+                               use_container_width=True):
+                elev_3d_result = 90
+                azim_3d_result = 0
+            if btn_cols[1].button("Von vorne", key="view_front", 
+                               type="primary", 
+                               use_container_width=True):
+                elev_3d_result = 0
+                azim_3d_result = 0
+            if btn_cols[2].button("Von rechts", key="view_right", 
+                               type="primary", 
+                               use_container_width=True):
+                elev_3d_result = 0
+                azim_3d_result = 90
+            if btn_cols[3].button("Isometrisch", key="view_iso", 
+                               type="primary", 
+                               use_container_width=True):
+                elev_3d_result = 30
+                azim_3d_result = 45
+            if btn_cols[4].button("Von links", key="view_left", 
+                               type="primary", 
+                               use_container_width=True):
+                elev_3d_result = 0
+                azim_3d_result = 270
+                
+            # Zeichne 3D-Oberfläche mit Matplotlib
+            fig3d_result = plt.figure(figsize=(10, 8))
+            ax3d_result = fig3d_result.add_subplot(111, projection='3d')
+            
+            # Erzeuge Gitter für 3D-Plot
+            x = np.linspace(x_range[0], x_range[1], resolution)
+            y = np.linspace(y_range[0], y_range[1], resolution)
+            X, Y = np.meshgrid(x, y)
+            Z = np.zeros_like(X)
+            
+            # Berechne Funktionswerte auf dem Gitter
+            for i in range(X.shape[0]):
+                for j in range(X.shape[1]):
                     try:
-                        ax3d.dist = st.session_state.dist_3d / 10  # Skaliere für bessere Werte
+                        params = np.array([X[i, j], Y[i, j]])
+                        result = current_func_obj(params)
+                        Z[i, j] = result.get('value', np.nan)
+                    except:
+                        Z[i, j] = np.nan
+            
+            # Statistische Verarbeitung für bessere Visualisierung
+            Z_finite = Z[np.isfinite(Z)]
+            if len(Z_finite) > 0:
+                z_mean = np.mean(Z_finite)
+                z_std = np.std(Z_finite)
+                z_min = max(np.min(Z_finite), z_mean - 5*z_std)
+                z_max = min(np.max(Z_finite), z_mean + 5*z_std)
+                
+                # Extremwerte begrenzen
+                Z_plot = np.copy(Z)
+                Z_plot[(Z_plot < z_min) & np.isfinite(Z_plot)] = z_min
+                Z_plot[(Z_plot > z_max) & np.isfinite(Z_plot)] = z_max
+            else:
+                Z_plot = Z
+            
+            # Zeichne 3D-Oberfläche
+            surf = ax3d.plot_surface(X, Y, Z_plot, cmap='viridis',
+                                     linewidth=0, antialiased=True, alpha=0.8)
+            
+            # Achsenbeschriftungen
+            ax3d.set_xlabel('X')
+            ax3d.set_ylabel('Y')
+            ax3d.set_zlabel('Funktionswert')
+            ax3d.set_title(f"3D-Oberfläche: {st.session_state.ausgewählte_funktion}")
+            
+            # Zeige bekannte Minima, falls vorhanden
+            if minima is not None:
+                for m in minima:
+                    try:
+                        z_val = current_func_obj(np.array(m))['value']
+                        ax3d.scatter([m[0]], [m[1]], [z_val], color='red', marker='+', s=120,
+                                     linewidths=2, label='Bekanntes Minimum')
                     except Exception:
                         pass
                     
-                    # Zeige Plot
-                    st.pyplot(fig3d)
-                    plt.close(fig3d)
-    
-                    # Zeige gespeicherte Ergebnisse
-                    if current_func_obj and st.session_state.optimierungsergebnisse:
-                        # Filtere Ergebnisse für die aktuelle Funktion
-                        current_function_results = {
-                            algo: result for algo, result in st.session_state.optimierungsergebnisse.items()
-                            if result["function"] == st.session_state.ausgewählte_funktion
-                        }
-                        
-                        if current_function_results:
-                            with results_container:
-                                st.markdown("### Bisherige Optimierungsergebnisse")
-                                
-                                # Erstelle Auswahlbox für gespeicherte Ergebnisse
-                                result_names = list(current_function_results.keys())
-                                selected_result = st.selectbox("Ergebnis auswählen", result_names)
-                                
-                                if selected_result:
-                                    result_data = current_function_results[selected_result]
-                    
-                    # Zeige Details zu den Ergebnissen
-                    st.markdown("### Details")
-                    col1, col2, col3, col4 = st.columns(4)
-                    
-                    with col1:
-                        history = result_data.get("history", [])
-                        st.metric("Startpunkt", f"[{history[0][0]:.3f}, {history[0][1]:.3f}]" if history else "N/A")
-                    
-                    with col2:
-                        best_x = result_data.get("best_x", None)
-                        st.metric("Endpunkt", f"[{best_x[0]:.3f}, {best_x[1]:.3f}]" if best_x is not None else "N/A")
-                    
-                    with col3:
-                        loss_history = result_data.get("loss_history", [])
-                        st.metric("Funktionswert", f"{loss_history[-1]:.6f}" if loss_history else "N/A")
-                    
-                    with col4:
-                        loss_history = result_data.get("loss_history", [])
-                        st.metric("Iterationen", f"{len(loss_history)-1}" if loss_history else "N/A")
-                    
-                    st.markdown(f"**Status:** {result_data.get('status', 'Unbekannt')}")
-                    
-                    # Zeige Optimierungspfad als 3D-Visualisierung
+            # Zeichne die Top-20 Optimierungspfade (aus der neuen App-Logik, falls gewünscht)
+            paths_to_plot = []
+            if "optimierungsergebnisse" in st.session_state and st.session_state.optimierungsergebnisse:
+                # Nur Läufe für die aktuell ausgewählte Funktion filtern
+                runs = [
+                    r for r in st.session_state.optimierungsergebnisse.values()
+                    if r.get('function') == st.session_state.ausgewählte_funktion and 'history' in r
+                ]
+                # Nach finalem Loss sortieren (kleinster Wert = beste Lösung)
+                runs_sorted = sorted(
+                    runs,
+                    key=lambda r: r.get('loss_history', [float('inf')])[-1]
+                )
+                # Top 20 extrahieren
+                for run in runs_sorted[:20]:
+                    hist = run.get('history')
+                    if hist:
+                        paths_to_plot.append(np.array(hist))
+            
+            for idx, path in enumerate(paths_to_plot):
+                xs, ys = path[:, 0], path[:, 1]
+                zs = []
+                for x, y in zip(xs, ys):
+                    try:
+                        val = current_func_obj(np.array([x, y]))['value']
+                        val_clipped = np.clip(val, z_min, z_max) if np.isfinite(z_min) and np.isfinite(z_max) else val
+                        zs.append(val_clipped)
+                    except Exception:
+                        zs.append(np.nan)
+                ax3d.plot(xs, ys, zs, marker='o', linewidth=1, markersize=3,
+                          alpha=0.6, label=f'Pfad {idx+1}' if idx < 1 else None)  # Nur 1x label für Legende
+            
+            # Zeige den neuesten Einzelpfad prominent wie in der alten App
+            if st.session_state.optimierungsergebnisse:
+                current_function_results = {
+                    algo: result for algo, result in st.session_state.optimierungsergebnisse.items()
+                    if result["function"] == st.session_state.ausgewählte_funktion and "history" in result
+                }
+                if current_function_results:
+                    sorted_results = sorted(
+                        current_function_results.items(),
+                        key=lambda x: x[1].get("timestamp", 0),
+                        reverse=True
+                    )
+                    # Neuestes Ergebnis nehmen
+                    algo_name, result_data = sorted_results[0]
                     if "history" in result_data and result_data["history"]:
-                        st.markdown("""
-                        <div style="background-color: #6a2c91; padding: 8px; border-radius: 8px; margin-bottom: 10px;">
-                            <h3 style="color: white; margin: 0;">3D-Visualisierung des Optimierungspfades</h3>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                    # 3D Plot Kontrollen
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        elev_3d_prev = st.slider("Elevation", 0, 90, 30, key="elev_prev")
-                    with col2:
-                        azim_3d_prev = st.slider("Azimuth", 0, 360, 45, key="azim_prev")
-                    with col3:
-                        dist_3d_prev = st.slider("Zoom", 5, 20, 10, key="dist_prev")
-                    with col4:
-                        resolution_prev = st.slider("Auflösung", 30, 100, 50, key="resolution_prev")
-                    
-                    # Buttons für Standardansichten
-                    btn_cols = st.columns(5)
-                    if btn_cols[0].button("Von oben", key="prev_top", 
-                                       type="primary", 
-                                       use_container_width=True):
-                        elev_3d_prev = 90
-                        azim_3d_prev = 0
-                    if btn_cols[1].button("Von vorne", key="prev_front", 
-                                       type="primary", 
-                                       use_container_width=True):
-                        elev_3d_prev = 0
-                        azim_3d_prev = 0
-                    if btn_cols[2].button("Von rechts", key="prev_right", 
-                                       type="primary", 
-                                       use_container_width=True):
-                        elev_3d_prev = 0
-                        azim_3d_prev = 90
-                    if btn_cols[3].button("Isometrisch", key="prev_iso", 
-                                       type="primary", 
-                                       use_container_width=True):
-                        elev_3d_prev = 30
-                        azim_3d_prev = 45
-                    if btn_cols[4].button("Von links", key="prev_left", 
-                                       type="primary", 
-                                       use_container_width=True):
-                        elev_3d_prev = 0
-                        azim_3d_prev = 270
-                        
-                    # Zeichne 3D-Oberfläche mit Matplotlib
-                    fig3d_prev = plt.figure(figsize=(10, 8))
-                    ax3d_prev = fig3d_prev.add_subplot(111, projection='3d')
-                    
-                    # Erzeuge Gitter für 3D-Plot
-                    x = np.linspace(x_range[0], x_range[1], resolution_prev)
-                    y = np.linspace(y_range[0], y_range[1], resolution_prev)
-                    X, Y = np.meshgrid(x, y)
-                    Z = np.zeros_like(X)
-                    
-                    # Berechne Funktionswerte auf dem Gitter
-                    for i in range(X.shape[0]):
-                        for j in range(X.shape[1]):
-                            try:
-                                params = np.array([X[i, j], Y[i, j]])
-                                result = current_func_obj(params)
-                                Z[i, j] = result.get('value', np.nan)
-                            except:
-                                Z[i, j] = np.nan
-                    
-                    # Statistische Verarbeitung für bessere Visualisierung
-                    Z_finite = Z[np.isfinite(Z)]
-                    if len(Z_finite) > 0:
-                        z_mean = np.mean(Z_finite)
-                        z_std = np.std(Z_finite)
-                        z_min = max(np.min(Z_finite), z_mean - 5*z_std)
-                        z_max = min(np.max(Z_finite), z_mean + 5*z_std)
-                        
-                        # Extremwerte begrenzen
-                        Z_plot = np.copy(Z)
-                        Z_plot[(Z_plot < z_min) & np.isfinite(Z_plot)] = z_min
-                        Z_plot[(Z_plot > z_max) & np.isfinite(Z_plot)] = z_max
-                    else:
-                        Z_plot = Z
-                        z_min = np.nan
-                        z_max = np.nan
-                    
-                    # Zeichne 3D-Oberfläche
-                    surf = ax3d_prev.plot_surface(X, Y, Z_plot, cmap='viridis', 
-                                                linewidth=0, antialiased=True, alpha=0.7,
-                                                rstride=1, cstride=1)
-                    
-                    # Zeichne Optimierungspfad in 3D
-                    if "history" in result_data:
                         path_points = np.array(result_data["history"])
                         path_x = path_points[:, 0]
                         path_y = path_points[:, 1]
                         path_z = np.zeros(len(path_points))
-                        
-                        # Berechne Z-Werte für den Pfad
                         for i, point in enumerate(result_data["history"]):
                             try:
                                 params = np.array(point)
-                                res = current_func_obj(params)
+                                if callable(current_func_obj):
+                                    res = current_func_obj(params)
+                                else:
+                                    print(f"Fehler: current_func_obj ist nicht aufrufbar an Punkt {algo_name} (Iteration {i}).")
+                                    res = {'value': np.nan}
                                 path_z[i] = res.get('value', np.nan)
-                                
-                                # Begrenze extreme Z-Werte falls statistisch verarbeitet
-                                if np.isfinite(path_z[i]) and np.isfinite(z_min) and np.isfinite(z_max):
-                                    path_z[i] = min(max(path_z[i], z_min), z_max)
-                            except:
+                            except Exception as e:
+                                print(f"Fehler bei Z-Berechnung für Pfadpunkt {i} von {algo_name}: {e}")
                                 path_z[i] = np.nan
-                    
-                        # Startpunkt besonders hervorheben
-                        ax3d_prev.scatter([path_x[0]], [path_y[0]], [path_z[0]], 
-                                    color='blue', marker='o', s=100, label='Start')
-                        
-                        # Endpunkt besonders hervorheben
-                        ax3d_prev.scatter([path_x[-1]], [path_y[-1]], [path_z[-1]], 
-                                    color='red', marker='*', s=100, label='Ende')
-                        
+    
+                        # Startpunkt
+                        ax3d.scatter([path_x[0]], [path_y[0]], [path_z[0]],
+                                     color='blue', marker='o', s=100, label='Start')
+                        # Endpunkt
+                        ax3d.scatter([path_x[-1]], [path_y[-1]], [path_z[-1]],
+                                     color='green', marker='*', s=100, label='Ende')
                         # Pfad einzeichnen
-                        ax3d_prev.plot(path_x, path_y, path_z, 'r-o', 
-                                  linewidth=2, markersize=4, label='Optimierungspfad')
+                        ax3d.plot(path_x, path_y, path_z, 'r-o',
+                                  linewidth=2, markersize=3, label='Optimierungspfad')
                     
-                    # Minima einzeichnen, falls vorhanden
-                    if minima is not None:
-                        for i, m in enumerate(minima):
-                            try:
-                                params = np.array(m)
-                                res = current_func_obj(params)
-                                z_val = res.get('value', np.nan)
-                                if np.isfinite(z_val):
-                                    ax3d_prev.scatter([m[0]], [m[1]], [z_val], 
-                                                color='green', marker='+', s=120, 
-                                                linewidths=2, label='Bekanntes Minimum' if i==0 else None)
-                            except:
-                                pass
+            # Legende & Colorbar
+            handles, labels = ax3d.get_legend_handles_labels()
+            by_label = dict(zip(labels, handles))
+            if by_label:
+                ax3d.legend(by_label.values(), by_label.keys(), loc='upper right')
+            fig3d.colorbar(surf, ax=ax3d, shrink=0.5, aspect=5)
+            
+            # Kameraeinstellungen
+            ax3d.view_init(elev=st.session_state.elev_3d, azim=st.session_state.azim_3d)
+            try:
+                ax3d.dist = st.session_state.dist_3d / 10  # Skaliere für bessere Werte
+            except Exception:
+                pass
+            
+            # Zeige Plot
+            st.pyplot(fig3d)
+            plt.close(fig3d)
+    
+        # Zeige gespeicherte Ergebnisse
+        if current_func_obj and st.session_state.optimierungsergebnisse:
+            # Filtere Ergebnisse für die aktuelle Funktion
+            current_function_results = {
+                algo: result for algo, result in st.session_state.optimierungsergebnisse.items()
+                if result["function"] == st.session_state.ausgewählte_funktion
+            }
+            
+            if current_function_results:
+                with results_container:
+                    st.markdown("### Bisherige Optimierungsergebnisse")
                     
-                    # Achsenbeschriftungen und Titel
-                    ax3d_prev.set_xlabel('X')
-                    ax3d_prev.set_ylabel('Y')
-                    ax3d_prev.set_zlabel('Funktionswert')
-                    ax3d_prev.set_title(f"3D-Pfad: {selected_result}")
+                    # Erstelle Auswahlbox für gespeicherte Ergebnisse
+                    result_names = list(current_function_results.keys())
+                    selected_result = st.selectbox("Ergebnis auswählen", result_names)
                     
-                    # Blickwinkel setzen
-                    ax3d_prev.view_init(elev=elev_3d_prev, azim=azim_3d_prev)
+                    if selected_result:
+                        result_data = current_function_results[selected_result]
+        
+        # Zeige Details zu den Ergebnissen
+        st.markdown("### Details")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            history = result_data.get("history", [])
+            st.metric("Startpunkt", f"[{history[0][0]:.3f}, {history[0][1]:.3f}]" if history else "N/A")
+        
+        with col2:
+            best_x = result_data.get("best_x", None)
+            st.metric("Endpunkt", f"[{best_x[0]:.3f}, {best_x[1]:.3f}]" if best_x is not None else "N/A")
+        
+        with col3:
+            loss_history = result_data.get("loss_history", [])
+            st.metric("Funktionswert", f"{loss_history[-1]:.6f}" if loss_history else "N/A")
+        
+        with col4:
+            loss_history = result_data.get("loss_history", [])
+            st.metric("Iterationen", f"{len(loss_history)-1}" if loss_history else "N/A")
+        
+        st.markdown(f"**Status:** {result_data.get('status', 'Unbekannt')}")
+        
+        # Zeige Optimierungspfad als 3D-Visualisierung
+        if "history" in result_data and result_data["history"]:
+            st.markdown("""
+            <div style="background-color: #6a2c91; padding: 8px; border-radius: 8px; margin-bottom: 10px;">
+                <h3 style="color: white; margin: 0;">3D-Visualisierung des Optimierungspfades</h3>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        # 3D Plot Kontrollen
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            elev_3d_prev = st.slider("Elevation", 0, 90, 30, key="elev_prev")
+        with col2:
+            azim_3d_prev = st.slider("Azimuth", 0, 360, 45, key="azim_prev")
+        with col3:
+            dist_3d_prev = st.slider("Zoom", 5, 20, 10, key="dist_prev")
+        with col4:
+            resolution_prev = st.slider("Auflösung", 30, 100, 50, key="resolution_prev")
+        
+        # Buttons für Standardansichten
+        btn_cols = st.columns(5)
+        if btn_cols[0].button("Von oben", key="prev_top", 
+                           type="primary", 
+                           use_container_width=True):
+            elev_3d_prev = 90
+            azim_3d_prev = 0
+        if btn_cols[1].button("Von vorne", key="prev_front", 
+                           type="primary", 
+                           use_container_width=True):
+            elev_3d_prev = 0
+            azim_3d_prev = 0
+        if btn_cols[2].button("Von rechts", key="prev_right", 
+                           type="primary", 
+                           use_container_width=True):
+            elev_3d_prev = 0
+            azim_3d_prev = 90
+        if btn_cols[3].button("Isometrisch", key="prev_iso", 
+                           type="primary", 
+                           use_container_width=True):
+            elev_3d_prev = 30
+            azim_3d_prev = 45
+        if btn_cols[4].button("Von links", key="prev_left", 
+                           type="primary", 
+                           use_container_width=True):
+            elev_3d_prev = 0
+            azim_3d_prev = 270
+            
+        # Zeichne 3D-Oberfläche mit Matplotlib
+        fig3d_prev = plt.figure(figsize=(10, 8))
+        ax3d_prev = fig3d_prev.add_subplot(111, projection='3d')
+        
+        # Erzeuge Gitter für 3D-Plot
+        x = np.linspace(x_range[0], x_range[1], resolution_prev)
+        y = np.linspace(y_range[0], y_range[1], resolution_prev)
+        X, Y = np.meshgrid(x, y)
+        Z = np.zeros_like(X)
+        
+        # Berechne Funktionswerte auf dem Gitter
+        for i in range(X.shape[0]):
+            for j in range(X.shape[1]):
+                try:
+                    params = np.array([X[i, j], Y[i, j]])
+                    result = current_func_obj(params)
+                    Z[i, j] = result.get('value', np.nan)
+                except:
+                    Z[i, j] = np.nan
+        
+        # Statistische Verarbeitung für bessere Visualisierung
+        Z_finite = Z[np.isfinite(Z)]
+        if len(Z_finite) > 0:
+            z_mean = np.mean(Z_finite)
+            z_std = np.std(Z_finite)
+            z_min = max(np.min(Z_finite), z_mean - 5*z_std)
+            z_max = min(np.max(Z_finite), z_mean + 5*z_std)
+            
+            # Extremwerte begrenzen
+            Z_plot = np.copy(Z)
+            Z_plot[(Z_plot < z_min) & np.isfinite(Z_plot)] = z_min
+            Z_plot[(Z_plot > z_max) & np.isfinite(Z_plot)] = z_max
+        else:
+            Z_plot = Z
+            z_min = np.nan
+            z_max = np.nan
+        
+        # Zeichne 3D-Oberfläche
+        surf = ax3d_prev.plot_surface(X, Y, Z_plot, cmap='viridis', 
+                                    linewidth=0, antialiased=True, alpha=0.7,
+                                    rstride=1, cstride=1)
+        
+        # Zeichne Optimierungspfad in 3D
+        if "history" in result_data:
+            path_points = np.array(result_data["history"])
+            path_x = path_points[:, 0]
+            path_y = path_points[:, 1]
+            path_z = np.zeros(len(path_points))
+            
+            # Berechne Z-Werte für den Pfad
+            for i, point in enumerate(result_data["history"]):
+                try:
+                    params = np.array(point)
+                    res = current_func_obj(params)
+                    path_z[i] = res.get('value', np.nan)
                     
-                    # Kameradistanz setzen (wenn möglich)
-                    try:
-                        ax3d_prev.dist = dist_3d_prev / 10
-                    except:
-                        pass  # Ältere matplotlib-Versionen unterstützen dies nicht
-                    
-                    # Legende anzeigen
-                    ax3d_prev.legend(loc='upper right')
-                    
-                    # Colorbar hinzufügen
-                    fig3d_prev.colorbar(surf, ax=ax3d_prev, shrink=0.5, aspect=5)
-                    
-                    # Plot anzeigen
-                    st.pyplot(fig3d_prev)
-                    plt.close(fig3d_prev)
+                    # Begrenze extreme Z-Werte falls statistisch verarbeitet
+                    if np.isfinite(path_z[i]) and np.isfinite(z_min) and np.isfinite(z_max):
+                        path_z[i] = min(max(path_z[i], z_min), z_max)
+                except:
+                    path_z[i] = np.nan
+        
+            # Startpunkt besonders hervorheben
+            ax3d_prev.scatter([path_x[0]], [path_y[0]], [path_z[0]], 
+                        color='blue', marker='o', s=100, label='Start')
+            
+            # Endpunkt besonders hervorheben
+            ax3d_prev.scatter([path_x[-1]], [path_y[-1]], [path_z[-1]], 
+                        color='red', marker='*', s=100, label='Ende')
+            
+            # Pfad einzeichnen
+            ax3d_prev.plot(path_x, path_y, path_z, 'r-o', 
+                      linewidth=2, markersize=4, label='Optimierungspfad')
+        
+        # Minima einzeichnen, falls vorhanden
+        if minima is not None:
+            for i, m in enumerate(minima):
+                try:
+                    params = np.array(m)
+                    res = current_func_obj(params)
+                    z_val = res.get('value', np.nan)
+                    if np.isfinite(z_val):
+                        ax3d_prev.scatter([m[0]], [m[1]], [z_val], 
+                                    color='green', marker='+', s=120, 
+                                    linewidths=2, label='Bekanntes Minimum' if i==0 else None)
+                except:
+                    pass
+        
+        # Achsenbeschriftungen und Titel
+        ax3d_prev.set_xlabel('X')
+        ax3d_prev.set_ylabel('Y')
+        ax3d_prev.set_zlabel('Funktionswert')
+        ax3d_prev.set_title(f"3D-Pfad: {selected_result}")
+        
+        # Blickwinkel setzen
+        ax3d_prev.view_init(elev=elev_3d_prev, azim=azim_3d_prev)
+        
+        # Kameradistanz setzen (wenn möglich)
+        try:
+            ax3d_prev.dist = dist_3d_prev / 10
+        except:
+            pass  # Ältere matplotlib-Versionen unterstützen dies nicht
+        
+        # Legende anzeigen
+        ax3d_prev.legend(loc='upper right')
+        
+        # Colorbar hinzufügen
+        fig3d_prev.colorbar(surf, ax=ax3d_prev, shrink=0.5, aspect=5)
+        
+        # Plot anzeigen
+        st.pyplot(fig3d_prev)
+        plt.close(fig3d_prev)
 
 with tabs[1]:
     st.markdown("## Funktionseditor")
