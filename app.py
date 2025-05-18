@@ -19,7 +19,6 @@ import visualization_suite_v3 as vs
 import improved_optimizer as iopt  # Renamed to avoid conflict with 'io'
 import data_manager as dm
 
-print("hello mFK")
 def create_visualization_tracker(func, x_range, y_range, contour_levels, minima):
     """
     Erstellt einen Tracker für den Optimierungspfad
@@ -758,16 +757,21 @@ with tabs[0]:
             plt.close(fig2d)
 
             # Callback und Parameter sollten zuvor erzeugt worden sein:
-            print(selected_algorithm_key)
-            print(iopt.OPTIMIZERS_EXTENDED.keys())
-            print(iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key])
-            print("Typ und Inhalt von result:", type(result), result)
+            #print(selected_algorithm_key)
+            #print(iopt.OPTIMIZERS_EXTENDED.keys())
+            #print(iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key])
+            #print("Typ und Inhalt von result:", type(result), result)
             
             # Funktionen für die Optimierung direkt implementieren
             selected_optimizer = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
             
-            # Resultate extrahieren
-            best_x, best_history, best_loss_history, status = result           
+            # Resultate extrahieren         
+            if not isinstance(result, (list, tuple)) or len(result) != 4:
+                st.error(f"Optimizer returned an unexpected result: {result} (type: {type(result)})")
+                st.stop()
+            else:
+                best_x, best_history, best_loss_history, status = result
+
             
             # Initialisiere Momentum-Variable
             velocity = np.zeros_like(x)
