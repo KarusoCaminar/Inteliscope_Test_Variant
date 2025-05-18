@@ -765,9 +765,13 @@ with tabs[0]:
             optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
             
             # WICHTIG: Erst prüfen, ob current_func_obj existiert!
-            print("DEBUG vor Optimizer-Aufruf: current_func_obj =", current_func_obj)
+            print("DEBUG: current_func_obj =", current_func_obj)
+            print("DEBUG: start_point =", start_point)
             if current_func_obj is None:
                 st.error("Funktion nicht gefunden oder geladen. Bitte Funktion auswählen!")
+                st.stop()
+            if start_point is None:
+                st.error("Startpunkt nicht gesetzt! Bitte wählen oder generieren Sie einen Startwert.")
                 st.stop()
                 
             # Parameter passend filtern und Optimierer aufrufen
@@ -954,9 +958,13 @@ with tabs[0]:
             print("type:", type(optimizer_fn))
             
             # WICHTIG: Erst prüfen, ob current_func_obj existiert!
-            print("DEBUG vor Optimizer-Aufruf: current_func_obj =", current_func_obj)
+            print("DEBUG: current_func_obj =", current_func_obj)
+            print("DEBUG: start_point =", start_point)
             if current_func_obj is None:
                 st.error("Funktion nicht gefunden oder geladen. Bitte Funktion auswählen!")
+                st.stop()
+            if start_point is None:
+                st.error("Startpunkt nicht gesetzt! Bitte wählen oder generieren Sie einen Startwert.")
                 st.stop()
             
             # Parameter passend filtern und Optimierer aufrufen
