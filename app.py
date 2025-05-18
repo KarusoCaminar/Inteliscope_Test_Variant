@@ -761,6 +761,11 @@ with tabs[0]:
             print(iopt.OPTIMIZERS_EXTENDED.keys())
             print(iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key])
             print("Typ und Inhalt von result:", type(result), result)
+
+            # Definiere erlaubte Parameter je Optimierer
+            GD_PARAMS = ["max_iter", "step_norm_tol", "func_impr_tol", "initial_t_ls", "callback"]
+            MOMENTUM_PARAMS = ["learning_rate", "momentum_beta", "max_iter", "grad_norm_tol", "callback"]
+            ADAM_PARAMS = ["learning_rate", "beta1", "beta2", "epsilon", "max_iter", "grad_norm_tol", "callback"]
             
             # Funktionen für die Optimierung direkt implementieren
             if selected_algorithm_key == "GD_Simple_LS":
