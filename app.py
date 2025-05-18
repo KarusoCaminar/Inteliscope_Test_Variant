@@ -755,10 +755,11 @@ with tabs[0]:
             # Plot anzeigen
             st.pyplot(fig2d)
             plt.close(fig2d)
-
-            print("Result is:", result)
-            print("Type:", type(result), "Length:", len(result) if hasattr(result, "__len__") else "n/a")
+            
             # Callback und Parameter sollten zuvor erzeugt worden sein:
+
+            # Funktionen für die Optimierung direkt implementieren
+            selected_optimizer = iopt.OPTIMIZERS[selected_algorithm_key]
             
             # Resultate extrahieren
             best_x, best_history, best_loss_history, status = result           
