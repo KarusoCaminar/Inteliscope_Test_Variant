@@ -756,11 +756,22 @@ with tabs[0]:
             st.pyplot(fig2d)
             plt.close(fig2d)
 
-            # Callback und Parameter sollten zuvor erzeugt worden sein:
-            #print(selected_algorithm_key)
-            #print(iopt.OPTIMIZERS_EXTENDED.keys())
-            #print(iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key])
-            #print("Typ und Inhalt von result:", type(result), result)
+            # Parameter Filterung
+            print(selected_algorithm_key)
+            print(iopt.OPTIMIZERS_EXTENDED.keys())
+            print(iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key])
+            print("Typ und Inhalt von result:", type(result), result)
+            
+            # Funktionen für die Optimierung direkt implementieren
+            if selected_algorithm_key == "GD_Simple_LS":
+                params = {k: v for k, v in optimizer_params.items() if k in GD_PARAMS}
+                result = optimizer_fn(current_func_obj, start_point, **params)
+            elif selected_algorithm_key == "GD_Momentum":
+                params = {k: v for k, v in optimizer_params.items() if k in MOMENTUM_PARAMS}
+                result = optimizer_fn(current_func_obj, start_point, **params)
+            elif selected_algorithm_key == "Adam":
+                params = {k: v for k, v in optimizer_params.items() if k in ADAM_PARAMS}
+                result = optimizer_fn(current_func_obj, start_point, **params)
             
             # Funktionen für die Optimierung direkt implementieren
             selected_optimizer = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
