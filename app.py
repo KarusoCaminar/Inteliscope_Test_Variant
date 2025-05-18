@@ -792,7 +792,12 @@ with tabs[0]:
                 </div>
                 """, unsafe_allow_html=True)
                 info_placeholder = st.empty()
-            
+
+            st.write("current_func_obj:", current_func_obj)
+            st.write("x_range:", x_range)
+            st.write("y_range:", y_range)
+            st.write("contour_levels:", contour_levels)
+            st.write("minima:", minima)
             print("current_func_obj:", current_func_obj)
             print("x_range:", x_range)
             print("y_range:", y_range)
