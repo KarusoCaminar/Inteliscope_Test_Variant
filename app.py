@@ -764,15 +764,12 @@ with tabs[0]:
             # Funktionsobjekt für den Optimierer auswählen
             optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
             
-            # Debug-Ausgaben direkt nach der Zuweisung (optional)
-            print("optimizer_fn =", optimizer_fn)
-            print("type:", type(optimizer_fn))
-            
             # WICHTIG: Erst prüfen, ob current_func_obj existiert!
+            print("DEBUG vor Optimizer-Aufruf: current_func_obj =", current_func_obj)
             if current_func_obj is None:
                 st.error("Funktion nicht gefunden oder geladen. Bitte Funktion auswählen!")
                 st.stop()
-            
+                
             # Parameter passend filtern und Optimierer aufrufen
             if selected_algorithm_key == "GD_Simple_LS":
                 params = {k: v for k, v in optimizer_params.items() if k in GD_PARAMS}
@@ -957,6 +954,7 @@ with tabs[0]:
             print("type:", type(optimizer_fn))
             
             # WICHTIG: Erst prüfen, ob current_func_obj existiert!
+            print("DEBUG vor Optimizer-Aufruf: current_func_obj =", current_func_obj)
             if current_func_obj is None:
                 st.error("Funktion nicht gefunden oder geladen. Bitte Funktion auswählen!")
                 st.stop()
