@@ -923,20 +923,20 @@ with tabs[0]:
             - Adaptive Lernrate: {'Ein' if use_adaptive_lr else 'Aus'}
             """)
             
+            # Direkte Optimierung ausführen via io.OPTIMIZERS
+            optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
+
             # Visualization‑Tracker erzeugen (Callback + Speicher für Pfad & Werte)
             visualization_callback, path_hist, loss_hist = create_visualization_tracker(
                 current_func_obj, x_range, y_range, contour_levels, minima
             )
-
-            # Direkte Optimierung ausführen via io.OPTIMIZERS
-            optimizer_fn = iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key]
         
             # Optimierung starten
             result = optimizer_fn(
-                current_func_obj,   # <-- func
-                start_point,        # <-- initial_x
-                callback=visualization_callback,
-                **optimizer_params
+                current_func_obj,   # func (positional)
+                start_point,        # initial_x (positional)
+                callback=visualization_callback,  # nur wenn der Optimierer `callback` kennt!
+                **optimizer_params  # nur Parameter, die wirklich in der Signatur vorkommen!
             )
         
             # Ergebnisse extrahieren
