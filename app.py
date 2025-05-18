@@ -933,8 +933,8 @@ with tabs[0]:
         
             # Optimierung starten
             result = optimizer_fn(
-                func=current_func_obj,
-                x0=start_point,
+                current_func_obj,   # <-- func
+                start_point,        # <-- initial_x
                 callback=visualization_callback,
                 **optimizer_params
             )
