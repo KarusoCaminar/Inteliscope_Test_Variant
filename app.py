@@ -793,16 +793,24 @@ with tabs[0]:
                 """, unsafe_allow_html=True)
                 info_placeholder = st.empty()
 
+            # Robust: minima IMMER in Liste von Listen verwandeln
+            if minima is None:
+                minima = []
+            elif hasattr(minima, "values"):  # z. B. pandas DataFrame
+                minima = minima.values.tolist()
+            elif isinstance(minima, dict):
+                # dict von dicts oder dict von Listen
+                minima = [list(v.values()) if isinstance(v, dict) else v for v in minima.values()]
+            elif isinstance(minima, list):
+                # Prüfe, ob list of dicts:
+                if len(minima) > 0 and isinstance(minima[0], dict):
+                    minima = [list(d.values()) for d in minima]
             st.write("current_func_obj:", current_func_obj)
             st.write("x_range:", x_range)
             st.write("y_range:", y_range)
             st.write("contour_levels:", contour_levels)
             st.write("minima:", minima)
-            print("current_func_obj:", current_func_obj)
-            print("x_range:", x_range)
-            print("y_range:", y_range)
-            print("contour_levels:", contour_levels)
-            print("minima:", minima)
+      
             # Erstelle Callback-Funktion
             visualization_callback, path_history, value_history = create_visualization_tracker(
                 current_func_obj, x_range, y_range, contour_levels, minima
