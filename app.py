@@ -757,10 +757,8 @@ with tabs[0]:
             plt.close(fig2d)
 
             # Parameter Filterung
-            print(selected_algorithm_key)
-            print(iopt.OPTIMIZERS_EXTENDED.keys())
-            print(iopt.OPTIMIZERS_EXTENDED[selected_algorithm_key])
-            print("Typ und Inhalt von result:", type(result), result)
+            print("optimizer_fn =", optimizer_fn)
+            print("type:", type(optimizer_fn))
 
             # Definiere erlaubte Parameter je Optimierer
             GD_PARAMS = ["max_iter", "step_norm_tol", "func_impr_tol", "initial_t_ls", "callback"]
