@@ -802,10 +802,10 @@ with tabs[0]:
                 info_placeholder = st.empty()
 
             # Debug-Ausgabe zu minima mit st.write
-            st.write("minima:", minima, type(minima))
-            if minima is not None:
-                for i, m in enumerate(minima):
-                    st.write(f"minima[{i}] =", m, type(m))
+            #st.write("minima:", minima, type(minima))
+            #if minima is not None:
+                #for i, m in enumerate(minima):
+                    #st.write(f"minima[{i}] =", m, type(m))
         
             # Erstelle Callback-Funktion
             visualization_callback, path_history, value_history = create_visualization_tracker(
