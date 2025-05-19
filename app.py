@@ -1455,7 +1455,7 @@ with tabs[1]:
         
         try:
             # Erstelle benutzerdefinierte Funktion
-            custom_func = pf.create_custom_function(
+            custom_func_obj = pf.create_custom_function(
                 expr_to_parse,
                 name=custom_func_name,
                 x_range=(x_min, x_max),
@@ -1463,10 +1463,10 @@ with tabs[1]:
             )
             
             # Teste die Funktion
-            test_result = custom_func(np.array([1.0, 1.0]))
+            test_result = custom_func_obj(np.array([1.0, 1.0]))
             if "value" in test_result and np.isfinite(test_result["value"]):
                 # Funktion ist gültig
-                st.session_state.custom_funcs[custom_func_name] = custom_func
+                st.session_state.custom_funcs[custom_func_name] = custom_func_obj
                 st.session_state.custom_func_count += 1
                 st.session_state.ausgewählte_funktion = custom_func_name
                 st.success(f"Funktion '{custom_func_name}' erfolgreich erstellt!")
